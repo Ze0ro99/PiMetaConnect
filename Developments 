@@ -1,0 +1,404 @@
+#!/bin/bash
+
+# تعليق: هذا السكربت يهدف إلى تحسين وتطوير مستودع PiMetaConnect ليصبح احترافيًا ومتطورًا مع إضافة شعار التطبيق
+
+# الخطوة 1: تحديد مسار المشروع
+PROJECT_DIR="./PiMetaConnect"
+echo "تجهيز المشروع في المسار: $PROJECT_DIR"
+
+# الخطوة 2: استنساخ المستودع من GitHub إذا لم يكن موجودًا
+if [ ! -d "$PROJECT_DIR" ]; then
+  echo "استنساخ المستودع من GitHub..."
+  git clone https://github.com/Ze0ro99/PiMetaConnect.git $PROJECT_DIR
+  cd $PROJECT_DIR
+  git checkout 8e7bb17
+else
+  echo "المستودع موجود بالفعل، الانتقال إلى المسار..."
+  cd $PROJECT_DIR
+fi
+
+# الخطوة 3: إعداد ملف package.json لتطبيق React احترافي
+echo "إعداد ملف package.json..."
+cat <<EOL > package.json
+{
+  "name": "pimetaconnect",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1",
+    "react-router-dom": "^6.14.2"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^14.4.3",
+    "eslint": "^8.45.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-plugin-react": "^7.33.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^13.2.3",
+    "prettier": "^3.0.0"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  }
+}
+EOL
+
+# الخطوة 4: إنشاء هيكلية React احترافية
+echo "إنشاء هيكلية المشروع الاحترافية..."
+mkdir -p src/{assets,components,pages,styles}
+mkdir -p public/assets
+
+# الخطوة 5: إضافة تعليمات لإضافة الصورة
+echo "إعداد مكان الصورة في public/assets..."
+echo "يرجى تنزيل الصورة التي قدمتها وحفظها في المسار التالي: $PROJECT_DIR/public/assets/logo.png"
+echo "إذا كانت الصورة بصيغة مختلفة (مثل jpg)، قم بتعديل اسم الملف في src/pages/Home.js لاحقًا."
+
+# إنشاء ملف App.js الرئيسي
+cat <<EOL > src/App.js
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Home from './pages/Home';
+import './styles/App.css';
+
+function App() {
+  return (
+    <Router>
+      <div className="App">
+        <Routes>
+          <Route path="/" element={<Home />} />
+        </Routes>
+      </div>
+    </Router>
+  );
+}
+
+export default App;
+EOL
+
+# إنشاء ملف index.js
+cat <<EOL > src/index.js
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './styles/index.css';
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+EOL
+
+# إنشاء صفحة رئيسية (Home) مع استخدام الصورة
+cat <<EOL > src/pages/Home.js
+import React from 'react';
+import logo from '../assets/logo.png';
+
+function Home() {
+  return (
+    <div className="home">
+      <img src={logo} alt="PiMetaConnect Logo" style={{ width: '150px', margin: '20px auto', display: 'block' }} />
+      <h1>Welcome to PiMetaConnect</h1>
+      <p>A professional React application for seamless connectivity.</p>
+    </div>
+  );
+}
+
+export default Home;
+EOL
+
+# إنشاء ملفات CSS
+cat <<EOL > src/styles/App.css
+.App {
+  text-align: center;
+  font-family: Arial, sans-serif;
+  background-color: #f0f2f5;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.home {
+  background-color: white;
+  padding: 40px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+  color: #333;
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+
+p {
+  color: #666;
+  font-size: 1.1rem;
+}
+EOL
+
+cat <<EOL > src/styles/index.css
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+EOL
+
+# إنشاء ملف index.html
+cat <<EOL > public/index.html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="PiMetaConnect - A professional React application for seamless connectivity" />
+    <title>PiMetaConnect</title>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+EOL
+
+# الخطوة 6: إعداد ملف vercel.json
+echo "تهيئة إعدادات Vercel في vercel.json..."
+cat <<EOL > vercel.json
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "installCommand": "npm install",
+  "buildCommand": "npm run build"
+}
+EOL
+
+# الخطوة 7: إعداد ESLint وPrettier
+echo "إعداد ESLint وPrettier..."
+cat <<EOL > .eslintrc.js
+module.exports = {
+  env: {
+    browser: true,
+    es2021: true,
+    node: true,
+  },
+  extends: [
+    'eslint:recommended',
+    'plugin:react/recommended',
+    'plugin:react-hooks/recommended',
+    'prettier'
+  ],
+  parserOptions: {
+    ecmaFeatures: {
+      jsx: true,
+    },
+    ecmaVersion: 12,
+    sourceType: 'module',
+  },
+  plugins: ['react'],
+  rules: {
+    'react/react-in-jsx-scope': 'off',
+    'no-unused-vars': 'warn',
+  },
+  settings: {
+    react: {
+      version: 'detect',
+    },
+  },
+};
+EOL
+
+cat <<EOL > .prettierrc
+{
+  "semi": true,
+  "trailingComma": "es5",
+  "singleQuote": true,
+  "printWidth": 80,
+  "tabWidth": 2,
+  "useTabs": false,
+  "bracketSpacing": true,
+  "arrowParens": "avoid"
+}
+EOL
+
+# الخطوة 8: إعداد اختبارات
+echo "إعداد ملفات الاختبار..."
+cat <<EOL > src/App.test.js
+import { render, screen } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App';
+
+test('renders welcome message', () => {
+  render(
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  );
+  const welcomeElement = screen.getByText(/Welcome to PiMetaConnect/i);
+  expect(welcomeElement).toBeInTheDocument();
+});
+EOL
+
+# الخطوة 9: إعداد GitHub Actions للنشر التلقائي على Vercel
+echo "إعداد GitHub Actions للنشر التلقائي..."
+mkdir -p .github/workflows
+cat <<EOL > .github/workflows/deploy.yml
+name: Deploy to Vercel
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install Dependencies
+        run: npm install
+      - name: Build
+        run: npm run build
+      - name: Deploy to Vercel
+        run: npx vercel --prod --token \${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: \${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: \${{ secrets.VERCEL_PROJECT_ID }}
+EOL
+
+# الخطوة 10: إعداد .gitignore
+echo "إعداد .gitignore..."
+cat <<EOL > .gitignore
+# Dependencies
+/node_modules
+
+# Build output
+/build
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+EOL
+
+# الخطوة 11: حذف الملفات غير الضرورية
+echo "حذف الملفات غير الضرورية..."
+if [ -f "validation-key.txt" ]; then
+  rm validation-key.txt
+  echo "تم حذف validation-key.txt"
+fi
+
+# الخطوة 12: إعادة تثبيت الحزم
+echo "حذف node_modules وإعادة تثبيت الحزم..."
+rm -rf node_modules package-lock.json
+npm install
+
+# الخطوة 13: تهيئة Husky
+echo "تهيئة Husky..."
+npx husky install
+npx husky add .husky/pre-commit "npx lint-staged"
+
+# الخطوة 14: تنسيق الكود
+echo "تنسيق الكود باستخدام Prettier..."
+npx prettier --write .
+
+# الخطوة 15: تحديث Vercel CLI
+echo "تحديث Vercel CLI..."
+npm install -g vercel@latest
+
+# الخطوة 16: تشغيل البناء محليًا للاختبار
+echo "تشغيل الأمر vercel build للاختبار..."
+vercel build
+
+# الخطوة 17: نشر المشروع على Vercel (اختياري)
+echo "هل تريد نشر المشروع على Vercel؟ (y/n)"
+read deploy_choice
+if [ "$deploy_choice" = "y" ]; then
+  echo "نشر المشروع على Vercel..."
+  vercel --prod
+else
+  echo "تم تخطي النشر، يمكنك تشغيل 'vercel --prod' يدويًا لاحقًا."
+fi
+
+# الخطوة 18: عرض رسالة النجاح أو الفشل
+if [ $? -eq 0 ]; then
+  echo "تمت العملية بنجاح! المشروع جاهز الآن."
+  echo "تأكد من إضافة الصورة في المسار: $PROJECT_DIR/public/assets/logo.png"
+else
+  echo "حدث خطأ، يرجى التحقق من الرسائل أعلاه."
+fi
