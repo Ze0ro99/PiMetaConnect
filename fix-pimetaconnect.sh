@@ -1,0 +1,170 @@
+#!/bin/bash
+
+# تعليق: هذا السكربت يهدف إلى تصحيح مشكلة "react-scripts: not found" في Vercel
+
+# الخطوة 1: تحديد مسار المشروع
+PROJECT_DIR="./PiMetaConnect"
+echo "تجهيز المشروع في المسار: $PROJECT_DIR"
+
+# الخطوة 2: استنساخ المستودع من GitHub إذا لم يكن موجودًا
+if [ ! -d "$PROJECT_DIR" ]; then
+  echo "استنساخ المستودع من GitHub..."
+  git clone https://github.com/Ze0ro99/PiMetaConnect.git $PROJECT_DIR
+  cd $PROJECT_DIR
+  git checkout 8e7bb17
+else
+  echo "المستودع موجود بالفعل، الانتقال إلى المسار..."
+  cd $PROJECT_DIR
+fi
+
+# الخطوة 3: التحقق من وجود ملف package.json وإعداده لتطبيق React
+if [ ! -f "package.json" ]; then
+  echo "ملف package.json غير موجود، إنشاء ملف افتراضي لتطبيق React..."
+  cat <<EOL > package.json
+{
+  "name": "pimetaconnect",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
+EOL
+else
+  echo "ملف package.json موجود، التأكد من وجود react-scripts..."
+  if ! grep -q '"react-scripts":' package.json; then
+    echo "إضافة react-scripts إلى الـ dependencies..."
+    npm install react-scripts@5.0.1 react@latest react-dom@latest
+  fi
+  if ! grep -q '"build": "react-scripts build"' package.json; then
+    echo "تعديل سكربت build لتطبيق React..."
+    sed -i '/"scripts": {/a \    "build": "react-scripts build",' package.json
+  fi
+  if ! grep -q '"start": "react-scripts start"' package.json; then
+    echo "تعديل سكربت start لتطبيق React..."
+    sed -i '/"scripts": {/a \    "start": "react-scripts start",' package.json
+  fi
+fi
+
+# الخطوة 4: إنشاء هيكلية React الأساسية إذا لم تكن موجودة
+if [ ! -d "src" ]; then
+  echo "إنشاء هيكلية React الأساسية..."
+  mkdir -p src
+  cat <<EOL > src/index.js
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+EOL
+
+  cat <<EOL > src/App.js
+import React from 'react';
+
+function App() {
+  return (
+    <div>
+      <h1>Hello from PiMetaConnect!</h1>
+    </div>
+  );
+}
+
+export default App;
+EOL
+
+  mkdir -p public
+  cat <<EOL > public/index.html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PiMetaConnect</title>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+EOL
+fi
+
+# الخطوة 5: إنشاء أو تعديل ملف vercel.json لتطبيق React
+echo "تهيئة إعدادات Vercel في vercel.json..."
+cat <<EOL > vercel.json
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "installCommand": "npm install"
+}
+EOL
+
+# الخطوة 6: إعادة تثبيت الحزم
+echo "حذف node_modules وإعادة تثبيت الحزم..."
+rm -rf node_modules package-lock.json
+npm install
+
+# الخطوة 7: تحديث Vercel CLI إلى أحدث إصدار
+echo "تحديث Vercel CLI..."
+npm install -g vercel@latest
+
+# الخطوة 8: تشغيل البناء محليًا للاختبار
+echo "تشغيل الأمر vercel build للاختبار..."
+vercel build
+
+# الخطوة 9: نشر المشروع على Vercel (اختياري)
+echo "هل تريد نشر المشروع على Vercel؟ (y/n)"
+read deploy_choice
+if [ "$deploy_choice" = "y" ]; then
+  echo "نشر المشروع على Vercel..."
+  vercel --prod
+else
+  echo "تم تخطي النشر، يمكنك تشغيل 'vercel --prod' يدويًا لاحقًا."
+fi
+
+# الخطوة 10: عرض رسالة النجاح أو الفشل
+if [ $? -eq 0 ]; then
+  echo "تمت العملية بنجاح! المشروع جاهز الآن."
+else
+  echo "حدث خطأ، يرجى التحقق من الرسائل أعلاه."
+fi
+chmod +x fix-pimetaconnect.sh
+./fix-pimetaconnect.sh
