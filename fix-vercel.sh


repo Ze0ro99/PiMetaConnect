@@ -1,0 +1,90 @@
+#!/bin/bash
+
+# تعليق: هذا السكربت يهدف إلى حل مشكلة EISDIR في Vercel من خلال فحص وتعديل إعدادات المشروع
+
+# الخطوة 1: تحديد مسار المشروع
+PROJECT_DIR="./PiMetaConnect"
+echo "تجهيز المشروع في المسار: $PROJECT_DIR"
+
+# الخطوة 2: استنساخ المستودع من GitHub إذا لم يكن موجودًا
+if [ ! -d "$PROJECT_DIR" ]; then
+  echo "استنساخ المستودع من GitHub..."
+  git clone https://github.com/Ze0ro99/PiMetaConnect.git $PROJECT_DIR
+  cd $PROJECT_DIR
+  git checkout c10ae2d
+else
+  echo "المستودع موجود بالفعل، الانتقال إلى المسار..."
+  cd $PROJECT_DIR
+fi
+
+# الخطوة 3: التحقق من وجود ملف package.json
+if [ ! -f "package.json" ]; then
+  echo "ملف package.json غير موجود، إنشاء ملف افتراضي..."
+  cat <<EOL > package.json
+{
+  "name": "pimetaconnect",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "node index.js",
+    "start": "node index.js"
+  },
+  "dependencies": {}
+}
+EOL
+else
+  echo "ملف package.json موجود، التحقق من السكربتات..."
+  # تعديل سكربت الـ build إذا لزم الأمر
+  if ! grep -q '"build":' package.json; then
+    echo "إضافة سكربت build إلى package.json..."
+    sed -i '/"scripts": {/a \    "build": "node index.js",' package.json
+  fi
+fi
+
+# الخطوة 4: التحقق من وجود ملف index.js
+if [ ! -f "index.js" ]; then
+  echo "ملف index.js غير موجود، إنشاء ملف افتراضي..."
+  echo "console.log('Hello from PiMetaConnect');" > index.js
+else
+  echo "ملف index.js موجود بالفعل."
+fi
+
+# الخطوة 5: إنشاء أو تعديل ملف vercel.json
+echo "تهيئة إعدادات Vercel في vercel.json..."
+cat <<EOL > vercel.json
+{
+  "builds": [
+    {
+      "src": "index.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "index.js"
+    }
+  ]
+}
+EOL
+
+# الخطوة 6: تحديث وتثبيت الحزم
+echo "حذف node_modules وإعادة تثبيت الحزم..."
+rm -rf node_modules package-lock.json
+npm install
+
+# الخطوة 7: تحديث Vercel CLI إلى أحدث إصدار
+echo "تحديث Vercel CLI..."
+npm install -g vercel@latest
+
+# الخطوة 8: تشغيل البناء محليًا للاختبار
+echo "تشغيل الأمر vercel build للاختبار..."
+vercel build
+
+# الخطوة 9: عرض رسالة النجاح أو الفشل
+if [ $? -eq 0 ]; then
+  echo "تمت عملية البناء بنجاح! يمكنك الآن نشر المشروع باستخدام: vercel --prod"
+else
+  echo "حدث خطأ أثناء البناء، يرجى التحقق من الرسائل أعلاه."
+fi
+chmod +x fix-vercel.sh
+./fix-vercel.sh
