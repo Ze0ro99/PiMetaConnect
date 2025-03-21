@@ -1,209 +1,139 @@
 #!/bin/bash
 
-# سكربت موحد لإعداد وتحسين الكود في مشروع Node.js
+# Meta-Connect Setup Script
+# This script automates the setup of the Meta-Connect project.
 
-# التحقق من وجود Node.js و npm
-if ! command -v node &> /dev/null; then
-    echo "خطأ: Node.js غير مثبت. يرجى تثبيت Node.js أولاً."
-    exit 1
-fi
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
 
-if ! command -v npm &> /dev/null; then
-    echo "خطأ: npm غير مثبت. يرجى تثبيت npm أولاً."
-    exit 1
-fi
-
-# الحصول على إصدار Node.js الحالي
-NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
-echo "إصدار Node.js المكتشف: v$NODE_VERSION"
-
-# التحقق من وجود package.json
-if [ ! -f package.json ]; then
-    echo "خطأ: ملف package.json غير موجود. يرجى تشغيل 'npm init -y' أولاً."
-    exit 1
-fi
-
-echo "بدء إعداد وتحسين المشروع..."
-
-# الخطوة 1: تحديث التبعيات باستخدام npm-check-updates
-echo "تحديث التبعيات باستخدام npm-check-updates..."
-npm install -g npm-check-updates
-ncu -u
-npm install
-
-# الخطوة 2: تثبيت الحزم المطلوبة للتنسيق والتحقق
-echo "تثبيت الحزم المطلوبة (Prettier، ESLint، Husky، lint-staged)..."
-npm install --save-dev prettier eslint eslint-config-prettier eslint-plugin-prettier eslint-config-react-app @typescript-eslint/parser @typescript-eslint/eslint-plugin husky lint-staged --legacy-peer-deps
-
-if [ $? -ne 0 ]; then
-    echo "خطأ أثناء تثبيت الحزم. تحقق من الاتصال بالإنترنت أو ملف package.json."
-    exit 1
-fi
-
-# الخطوة 3: إنشاء ملف تكوين ESLint (.eslintrc.json)
-echo "إنشاء ملف .eslintrc.json..."
-# التحقق مما إذا كان المشروع يستخدم TypeScript أو React
-USE_TYPESCRIPT=false
-USE_REACT=false
-
-if grep -q '"typescript"' package.json || ls *.ts *.tsx &> /dev/null; then
-    USE_TYPESCRIPT=true
-fi
-
-if grep -q '"react"' package.json; then
-    USE_REACT=true
-fi
-
-# إعداد ملف .eslintrc.json بناءً على نوع المشروع
-cat <<EOL > .eslintrc.json
-{
-  "env": {
-    "browser": true,
-    "es2021": true,
-    "node": true
-  },
-  "extends": [
-    "eslint:recommended",
-    "plugin:prettier/recommended"
-    $(if $USE_REACT; then echo ', "plugin:react/recommended", "eslint-config-react-app"'; fi)
-    $(if $USE_TYPESCRIPT; then echo ', "plugin:@typescript-eslint/recommended"'; fi)
-  ],
-  "parser": $(if $USE_TYPESCRIPT; then echo '"@typescript-eslint/parser"'; else echo '"babel-eslint"'; fi),
-  "parserOptions": {
-    "ecmaFeatures": {
-      "jsx": $(if $USE_REACT; then echo 'true'; else echo 'false'; fi)
-    },
-    "ecmaVersion": 12,
-    "sourceType": "module"
-  },
-  "plugins": [
-    "prettier"
-    $(if $USE_REACT; then echo ', "react"'; fi)
-    $(if $USE_TYPESCRIPT; then echo ', "@typescript-eslint"'; fi)
-  ],
-  "rules": {
-    "prettier/prettier": "error"
-    $(if $USE_REACT; then echo ', "react/react-in-jsx-scope": "off"'; fi)
-  },
-  "settings": {
-    $(if $USE_REACT; then echo '"react": { "version": "detect" }'; fi)
-  }
+# Function to print messages
+print_message() {
+    echo -e "${GREEN}[INFO] $1${NC}"
 }
-EOL
 
-# الخطوة 4: إنشاء ملف تكوين Prettier (.prettierrc)
-echo "إنشاء ملف .prettierrc..."
-cat <<EOL > .prettierrc
-{
-  "semi": true,
-  "trailingComma": "es5",
-  "singleQuote": true,
-  "printWidth": 80,
-  "tabWidth": 2,
-  "useTabs": false,
-  "bracketSpacing": true,
-  "arrowParens": "avoid"
+print_error() {
+    echo -e "${RED}[ERROR] $1${NC}"
+    exit 1
 }
-EOL
 
-# الخطوة 5: إنشاء ملف .eslintignore
-echo "إنشاء ملف .eslintignore..."
-cat <<EOL > .eslintignore
-node_modules
-dist
-build
-EOL
+print_warning() {
+    echo -e "${YELLOW}[WARNING] $1${NC}"
+}
 
-# الخطوة 6: إنشاء ملف .prettierignore
-echo "إنشاء ملف .prettierignore..."
-cat <<EOL > .prettierignore
-node_modules
-dist
-build
-EOL
+# Check if a command exists
+check_command() {
+    if ! command -v $1 &> /dev/null; then
+        print_error "$1 is required but not installed. Please install it and try again."
+    fi
+}
 
-# الخطوة 7: تحديث package.json بإضافة سكربتات
-echo "تحديث package.json بإضافة سكربتات..."
-node -e "
-  const fs = require('fs');
-  const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-  pkg.scripts = pkg.scripts || {};
-  pkg.scripts.lint = 'eslint . --ext .js,.jsx" + ($USE_TYPESCRIPT ? ",.ts,.tsx" : "") + "';
-  pkg.scripts['lint:fix'] = 'eslint . --ext .js,.jsx" + ($USE_TYPESCRIPT ? ",.ts,.tsx" : "") + " --fix';
-  pkg.scripts.format = 'prettier --write \"**/*.{js,jsx" + ($USE_TYPESCRIPT ? ",ts,tsx" : "") + ",json,md}\"';
-  pkg['lint-staged'] = {
-    '*.{js,jsx" + ($USE_TYPESCRIPT ? ",ts,tsx" : "") + "}': ['eslint --fix', 'prettier --write']
-  };
-  fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
-"
+# Step 1: Check for required tools
+print_message "Checking for required tools..."
+check_command node
+check_command npm
+check_command python3
+check_command pip3
+check_command git
 
-# الخطوة 8: إعداد Husky و lint-staged
-echo "إعداد Husky و lint-staged..."
-npx husky install
-npx husky add .husky/pre-commit "npx lint-staged"
-
-# الخطوة 9: إعداد GitHub Actions Workflow
-echo "إعداد GitHub Actions Workflow..."
-mkdir -p .github/workflows
-cat <<EOL > .github/workflows/lint.yml
-name: Lint and Format
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-jobs:
-  lint:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '$NODE_VERSION'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run ESLint
-        run: npm run lint
-
-      - name: Run Prettier
-        run: npm run format
-EOL
-
-# الخطوة 10: إعداد Dependabot لتحديث التبعيات تلقائيًا
-echo "إعداد Dependabot..."
-cat <<EOL > .github/dependabot.yml
-version: 2
-updates:
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-EOL
-
-# الخطوة 11: اختبار السكربتات
-echo "اختبار السكربتات..."
-npm run lint
-if [ $? -ne 0 ]; then
-    echo "تحذير: فشل تشغيل ESLint. قد تكون هناك أخطاء في الكود. جرب تشغيل 'npm run lint:fix'."
+# Step 2: Verify project structure
+print_message "Verifying project structure..."
+if [ ! -d "frontend" ] || [ ! -d "backend" ] || [ ! -d "scripts" ]; then
+    print_error "Project structure is incorrect. Please ensure 'frontend', 'backend', and 'scripts' directories exist."
 fi
 
-npm run format
-if [ $? -ne 0 ]; then
-    echo "تحذير: فشل تشغيل Prettier. تحقق من ملفات الكود."
+# Step 3: Set up environment variables
+print_message "Setting up environment variables..."
+if [ ! -f ".env" ]; then
+    if [ -f ".env.example" ]; then
+        cp .env.example .env
+        print_message "Created .env file from .env.example. Please fill in the required values."
+    else
+        print_warning ".env.example not found. Please create a .env file with the required environment variables."
+    fi
+else
+    print_message ".env file already exists."
 fi
 
-echo "تم الإعداد بنجاح! يمكنك الآن استخدام الأوامر التالية:"
-echo "- npm run lint: للتحقق من الأخطاء"
-echo "- npm run lint:fix: لإصلاح الأخطاء تلقائيًا"
-echo "- npm run format: لتنسيق الكود باستخدام Prettier"
-echo "تم أيضًا إعداد Husky وlint-staged لتشغيل التحقق تلقائيًا قبل كل commit."
-echo "تم إعداد Dependabot لتحديث التبعيات أسبوعيًا."
+# Step 4: Install Frontend dependencies
+print_message "Installing Frontend dependencies..."
+cd frontend || print_error "Failed to navigate to frontend directory."
+npm install || print_error "Failed to install Frontend dependencies."
+cd ..
+
+# Step 5: Install Backend dependencies (Node.js)
+print_message "Installing Backend (Node.js) dependencies..."
+cd backend || print_error "Failed to navigate to backend directory."
+npm install || print_error "Failed to install Backend (Node.js) dependencies."
+cd ..
+
+# Step 6: Install Backend dependencies (Python)
+print_message "Installing Backend (Python) dependencies..."
+if [ -f "scripts/requirements.txt" ]; then
+    pip3 install -r scripts/requirements.txt || print_error "Failed to install Python dependencies."
+else
+    print_warning "requirements.txt not found in scripts directory. Skipping Python dependencies installation."
+fi
+
+# Step 7: Set up linting tools
+print_message "Setting up linting tools..."
+# Frontend: ESLint
+cd frontend
+if ! npm list eslint &> /dev/null; then
+    npm install --save-dev eslint || print_warning "Failed to install ESLint."
+    npx eslint --init || print_warning "Failed to initialize ESLint."
+else
+    print_message "ESLint is already installed."
+fi
+cd ..
+
+# Backend: Flake8 for Python
+if ! pip3 list | grep flake8 &> /dev/null; then
+    pip3 install flake8 || print_warning "Failed to install Flake8."
+else
+    print_message "Flake8 is already installed."
+fi
+
+# Step 8: Run tests (if available)
+print_message "Running tests..."
+if [ -d "tests" ]; then
+    # Frontend tests
+    cd frontend
+    if npm test -- --silent; then
+        print_message "Frontend tests passed."
+    else
+        print_warning "Frontend tests failed. Please check the test output."
+    fi
+    cd ..
+
+    # Backend tests (Python)
+    if pytest tests/; then
+        print_message "Backend tests passed."
+    else
+        print_warning "Backend tests failed. Please check the test output."
+    fi
+else
+    print_warning "Tests directory not found. Skipping tests."
+fi
+
+# Step 9: Start the application
+print_message "Starting the application..."
+# Start Backend
+cd backend
+npm start &
+BACKEND_PID=$!
+cd ..
+
+# Start Frontend
+cd frontend
+npm start &
+FRONTEND_PID=$!
+
+# Wait for both processes to complete
+wait $BACKEND_PID $FRONTEND_PID
+
+print_message "Meta-Connect setup completed successfully!"
+print_message "Frontend should be running at http://localhost:3000"
+print_message "Backend should be running at http://localhost:5000 (or your configured port)."
