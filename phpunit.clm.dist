@@ -1,33 +1,142 @@
-<?xml version="1.0" encoding="UTF-8"?>
+#!/bin/bash
 
-<!-- https://phpunit.readthedocs.io/en/latest/configuration.html -->
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="bin/.phpunit/phpunit.xsd"
-         backupGlobals="false"
-         colors="true"
-         bootstrap="tests/bootstrap.php"
->
-    <php>
-        <ini name="error_reporting" value="-1" />
-        <server name="APP_ENV" value="test" force="true" />
-        <server name="SHELL_VERBOSITY" value="-1" />
-        <server name="SYMFONY_PHPUNIT_REMOVE" value="" />
-        <server name="SYMFONY_PHPUNIT_VERSION" value="7.5" />
-    </php>
+# Script Name: pimetaconnect-manager.sh
+# Purpose: Automate PiMetaConnect repository management for Symfony/PHPUnit project
 
-    <testsuites>
-        <testsuite name="Project Test Suite">
-            <directory>tests</directory>
-        </testsuite>
-    </testsuites>
+# Pre-filled Configuration
+REPO_NAME="PiMetaConnect"
+USERNAME="Ze0ro99"
+HTTPS_URL="https://github.com/Ze0ro99/PiMetaConnect.git"
+SSH_URL="git@github.com:Ze0ro99/PiMetaConnect.git"
+DEFAULT_CLONE_DIR="./PiMetaConnect"
+DEFAULT_BRANCH="main"
 
-    <filter>
-        <whitelist processUncoveredFilesFromWhitelist="true">
-            <directory suffix=".php">src</directory>
-        </whitelist>
-    </filter>
+# Colors for better output
+GREEN='\033[0;32m'
+RED='\033[0;33m'
+NC='\033[0m' # No Color
 
-    <listeners>
-        <listener class="Symfony\Bridge\PhpUnit\SymfonyTestsListener" />
-    </listeners>
-</phpunit>
+# Function to check prerequisites
+check_prerequisites() {
+    if ! command -v git &> /dev/null; then
+        echo -e "${RED}Error: Git is not installed. Please install Git first.${NC}"
+        exit 1
+    fi
+    if ! command -v php &> /dev/null; then
+        echo -e "${RED}Error: PHP is not installed. Please install PHP first.${NC}"
+        exit 1
+    fi
+    if ! command -v composer &> /dev/null; then
+        echo -e "${RED}Error: Composer is not installed. Please install Composer first.${NC}"
+        exit 1
+    fi
+}
+
+# Function to clone repository if not exists
+clone_repo() {
+    local url=$1
+    if [ -d "$DEFAULT_CLONE_DIR" ]; then
+        echo "Repository already exists locally. Skipping clone..."
+    else
+        echo -e "${GREEN}Cloning repository from: $url${NC}"
+        git clone "$url" "$DEFAULT_CLONE_DIR"
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}Failed to clone repository${NC}"
+            exit 1
+        fi
+    fi
+    cd "$DEFAULT_CLONE_DIR" || exit 1
+}
+
+# Function to install dependencies
+install_dependencies() {
+    echo -e "${GREEN}Installing Composer dependencies...${NC}"
+    composer install --no-interaction --prefer-dist
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}Failed to install dependencies${NC}"
+        exit 1
+    fi
+}
+
+# Function to pull latest changes
+pull_changes() {
+    echo -e "${GREEN}Pulling latest changes from $DEFAULT_BRANCH...${NC}"
+    git pull origin "$DEFAULT_BRANCH"
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}Failed to pull changes${NC}"
+        exit 1
+    fi
+}
+
+# Function to run PHPUnit tests
+run_tests() {
+    echo -e "${GREEN}Running PHPUnit tests...${NC}"
+    ./vendor/bin/phpunit --configuration phpunit.xml
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}Tests failed${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN}All tests passed successfully!${NC}"
+}
+
+# Function to commit and push changes
+commit_and_push() {
+    echo "Checking for changes..."
+    git add .
+    if git status | grep -q "nothing to commit"; then
+        echo "No changes to commit."
+    else
+        read -p "Enter commit message: " commit_message
+        git commit -m "$commit_message"
+        echo -e "${GREEN}Pushing changes to $DEFAULT_BRANCH...${NC}"
+        git push origin "$DEFAULT_BRANCH"
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}Failed to push changes${NC}"
+            exit 1
+        fi
+        echo -e "${GREEN}Changes successfully pushed!${NC}"
+    fi
+}
+
+# Main automation function
+automate_workflow() {
+    local url=$1
+    clone_repo "$url"
+    install_dependencies
+    pull_changes
+    run_tests
+    commit_and_push
+}
+
+# Main execution
+echo "=== PiMetaConnect Repository Manager (Symfony/PHPUnit) ==="
+echo "Repository: $REPO_NAME"
+echo "Username: $USERNAME"
+echo "========================================"
+
+# Check prerequisites
+check_prerequisites
+
+# Prompt user for clone method
+echo "Select clone method:"
+echo "1) HTTPS (${HTTPS_URL})"
+echo "2) SSH (${SSH_URL})"
+read -p "Enter your choice (1 or 2): " choice
+
+# Process user choice and execute workflow
+case $choice in
+    1)
+        automate_workflow "$HTTPS_URL"
+        ;;
+    2)
+        automate_workflow "$SSH_URL"
+        ;;
+    *)
+        echo -e "${RED}Invalid choice. Please run again and select 1 or 2.${NC}"
+        exit 1
+        ;;
+esac
+
+echo -e "${GREEN}Repository management and testing completed successfully!${NC}"
+chmod +x pimetaconnect-manager.sh
+./pimetaconnect-manager.sh
