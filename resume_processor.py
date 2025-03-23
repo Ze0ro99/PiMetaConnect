@@ -14,7 +14,7 @@ import hashlib
 class ResumeProcessor:
     def __init__(self, input_dir="input_resumes"):
         self.resume_data = {}
-        self.api_key = "your_virustotal_api_key"  # استبدل بمفتاح API الخاص بك من VirusTotal
+        self.api_key = "https://gist.github.com/Ze0ro99/a1ed0dc514b4dd804c6386be5a360def"  # استبدل بمفتاح API الخاص بك من VirusTotal
         self.base_dir = "processed_resumes"
         self.input_dir = input_dir
         self.github_repo = "https://github.com/Ze0ro99/PiMetaConnect.git"
