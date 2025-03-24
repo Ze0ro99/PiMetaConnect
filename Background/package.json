@@ -1,7 +1,7 @@
 {
-  "name": "metaconnect",
+  "name": "Pimetaconnect",
   "version": "1.0.0",
-  "description": "Metaconnect هو مشروع لتطوير تطبيق ويب يستخدم Express وMongoose لإنشاء واجهة برمجة التطبيقات (API) تدعم عمليات CRUD",
+  "description": "PiMetaconnect هو مشروع لتطوير تطبيق ويب يستخدم Express وMongoose لإنشاء واجهة برمجة التطبيقات (API) تدعم عمليات CRUD",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Ze0ro99/metaconnect.git"
+    "url": "https://github.com/Ze0ro99/PiMetaConnect.git"
   },
   "keywords": [
     "تطبيق ويب",
