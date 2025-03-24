@@ -1,94 +1,101 @@
 #!/bin/bash
 
-# Step 1: Update and upgrade Termux packages
-echo "Updating and upgrading Termux packages..."
-pkg update -y
-pkg upgrade -y
+# Script Name: metaconnect-full-manager.sh
+# Purpose: Automate MetaConnect full-stack project setup and management on Termux
 
-# Step 2: Install necessary packages
-echo "Installing necessary packages..."
-pkg install -y git nodejs nano
-
-# Step 3: Clone the MetaConnect repository
+# Configuration
 REPO_URL="https://github.com/Ze0ro99/MetaConnect-.git"
 REPO_DIR="MetaConnect-"
-
-if [ -d "$REPO_DIR" ]; then
-  echo "Directory $REPO_DIR already exists. Skipping clone."
-else
-  echo "Cloning the repository..."
-  git clone $REPO_URL
-fi
-
-# Step 4: Navigate to the backend directory and install dependencies
-cd MetaConnect-/backend
-echo "Installing backend dependencies..."
-npm install
-
-# Step 5: Create and edit the .env file
-echo "Creating .env file..."
-cat <<EOL > .env
-MONGO_URI=your_actual_mongodb_connection_string
+BACKEND_DIR="$REPO_DIR/backend"
+FRONTEND_DIR="$REPO_DIR/frontend"  # Assuming frontend is in a 'frontend' subdirectory
+DEFAULT_BRANCH="main"
+BACKEND_URL="http://localhost:3001"
+PI_API_KEY="5d8bc63cfa473df9a90c3308432e255c892f4b363143dfd8fa98c6c44d1b0bda13b78ce5a9c195b1648220c33a7b4f026b8176c0a0c87ba421c309533a57480c"
+MONGO_URI="your_actual_mongodb_connection_string"  # Replace with your MongoDB URI
 PORT=5000
+
+# Colors for better output
+GREEN='\033[0;32m'
+RED='\033[0;33m'
+NC='\033[0m' # No Color
+
+# Function to check and install prerequisites
+setup_prerequisites() {
+    echo -e "${GREEN}Updating and upgrading Termux packages...${NC}"
+    pkg update -y && pkg upgrade -y
+    
+    echo -e "${GREEN}Installing necessary packages...${NC}"
+    pkg install -y git nodejs nano
+}
+
+# Function to clone repository
+clone_repo() {
+    if [ -d "$REPO_DIR" ]; then
+        echo "Directory $REPO_DIR already exists. Skipping clone."
+    else
+        echo -e "${GREEN}Cloning the repository...${NC}"
+        git clone "$REPO_URL"
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}Failed to clone repository${NC}"
+            exit 1
+        fi
+    fi
+}
+
+# Function to setup backend
+setup_backend() {
+    cd "$BACKEND_DIR" || { echo -e "${RED}Backend directory not found${NC}"; exit 1; }
+    
+    echo -e "${GREEN}Installing backend dependencies...${NC}"
+    npm install
+    
+    echo -e "${GREEN}Installing 'cors' module...${NC}"
+    npm install cors
+    
+    echo -e "${GREEN}Creating backend .env file...${NC}"
+    cat <<EOL > .env
+MONGO_URI=$MONGO_URI
+PORT=$PORT
 EOL
-
-# Step 6: Install the missing 'cors' module
-echo "Installing 'cors' module..."
-npm install cors
-
-# Step 7: Update all dependencies to the latest version
-echo "Updating all dependencies to the latest version..."
-npm install -g npm-check-updates
-ncu -u
-npm install
-
-# Step 8: Fix errors using ESLint and Prettier
-echo "Fixing errors using ESLint and Prettier..."
-npm install eslint prettier --save-dev
-
-# Create ESLint configuration file
-cat <<EOL > eslint.config.js
+    
+    echo -e "${GREEN}Updating dependencies to latest versions...${NC}"
+    npm install -g npm-check-updates
+    ncu -u
+    npm install
+    
+    echo -e "${GREEN}Setting up ESLint and Prettier...${NC}"
+    npm install eslint prettier --save-dev
+    cat <<EOL > eslint.config.js
 export default [
   {
     files: ["**/*.js"],
     languageOptions: {
-      globals: {
-        // Define global variables here
-      },
+      globals: { process: "readonly" }
     },
     rules: {
-      // Define your rules here
-    },
-  },
+      "no-unused-vars": "warn"
+    }
+  }
 ];
 EOL
-
-npx eslint --fix .
-npx prettier --write .
-
-# Step 9: Add test scripts and install Jest
-echo "Adding test scripts and installing Jest..."
-npm install jest --save-dev
-
-# Update package.json to include test script
-cat <<EOL > package.json
+    npx eslint --fix .
+    npx prettier --write .
+    
+    echo -e "${GREEN}Installing Jest for testing...${NC}"
+    npm install jest --save-dev
+    
+    echo -e "${GREEN}Updating package.json...${NC}"
+    cat <<EOL > package.json
 {
-  "name": "metaconnect",
+  "name": "metaconnect-backend",
   "version": "1.0.0",
-  "description": "Metaconnect هو مشروع لتطوير تطبيق ويب يستخدم Express وMongoose لإنشاء واجهة برمجة التطبيقات (API) تدعم عمليات CRUD.",
+  "description": "Backend for MetaConnect project",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "test": "jest",
     "dev": "nodemon index.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Ze0ro99/metaconnect.git"
-  },
-  "keywords": ["تطبيق ويب", "API", "Express", "Mongoose", "CRUD"],
-  "author": "Ze0ro99",
-  "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
     "mongoose": "^8.9.5",
@@ -102,72 +109,67 @@ cat <<EOL > package.json
   }
 }
 EOL
+    
+    echo -e "${GREEN}Running backend tests...${NC}"
+    npm test
+}
 
-# Step 10: Run tests to ensure everything is working
-echo "Running tests to ensure everything is working..."
-npm test
-
-# Step 11: Create the missing 'routes/transactions' file
-echo "Creating 'routes/transactions' file..."
-mkdir -p routes
-cat <<EOL > routes/transactions.js
-const express = require('express');
-const router = express.Router();
-const Transaction = require('../models/Transaction');
-const User = require('../models/User');
-
-// Deposit route
-router.post('/deposit', async (req, res) => {
-  try {
-    const { userId, amount } = req.body;
-    const newTransaction = new Transaction({ user: userId, amount, type: 'deposit' });
-    await newTransaction.save();
-    await User.findByIdAndUpdate(userId, { $inc: { balance: amount } });
-    res.status(200).json({ message: 'Deposit successful', transaction: newTransaction });
-  } catch (error) {
-    res.status(500).json({ message: 'Error processing deposit', error });
-  }
-});
-
-// Withdrawal route
-router.post('/withdraw', async (req, res) => {
-  try {
-    const { userId, amount } = req.body;
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    if (user.balance < amount) {
-      return res.status(400).json({ message: 'Insufficient balance' });
-    }
-    const newTransaction = new Transaction({ user: userId, amount, type: 'withdrawal' });
-    await newTransaction.save();
-    await User.findByIdAndUpdate(userId, { $inc: { balance: -amount } });
-    res.status(200).json({ message: 'Withdrawal successful', transaction: newTransaction });
-  } catch (error) {
-    res.status(500).json({ message: 'Error processing withdrawal', error });
-  }
-});
-
-module.exports = router;
+# Function to setup frontend
+setup_frontend() {
+    cd "$FRONTEND_DIR" || { echo -e "${RED}Frontend directory not found${NC}"; exit 1; }
+    
+    echo -e "${GREEN}Installing frontend dependencies...${NC}"
+    npm install
+    
+    echo -e "${GREEN}Creating frontend .env file...${NC}"
+    cat <<EOL > .env
+REACT_APP_BACKEND_URL=$BACKEND_URL
+REACT_APP_PI_API_KEY=$PI_API_KEY
 EOL
+}
 
-# Step 12: Fix the syntax error in server.js
-echo "Fixing syntax error in server.js..."
-sed -i "12s/.*/mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })/" server.js
+# Function to start services
+start_services() {
+    cd "$BACKEND_DIR" || exit 1
+    echo -e "${GREEN}Starting backend server...${NC}"
+    npm start &
+    BACKEND_PID=$!
+    
+    cd "$FRONTEND_DIR" || exit 1
+    echo -e "${GREEN}Starting frontend React app...${NC}"
+    npm start &
+    FRONTEND_PID=$!
+    
+    echo -e "${GREEN}Backend running on port $PORT, Frontend on http://localhost:3000${NC}"
+}
 
-# Step 13: Generate package-lock.json file
-echo "Generating package-lock.json file..."
-npm install
+# Function to commit and push changes
+commit_and_push() {
+    cd "$REPO_DIR" || exit 1
+    echo -e "${GREEN}Committing and pushing changes...${NC}"
+    git add .
+    if git status | grep -q "nothing to commit"; then
+        echo "No changes to commit."
+    else
+        git commit -m "Automated setup and updates"
+        git push origin "$DEFAULT_BRANCH"
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}Failed to push changes${NC}"
+            exit 1
+        fi
+    fi
+}
 
-# Step 14: Commit and push the lock file to the repository
-echo "Committing and pushing the lock file to the repository..."
-git add package-lock.json
-git commit -m "Add package-lock.json file"
-git push origin main
+# Main execution
+echo "=== MetaConnect Full-Stack Manager ==="
+echo "Repository: $REPO_URL"
+echo "========================================"
 
-# Step 15: Start the backend server
-echo "Starting the backend server..."
-node server.js
+setup_prerequisites
+clone_repo
+setup_backend
+setup_frontend
+start_services
+commit_and_push
 
-echo "Script completed successfully."
+echo -e "${GREEN}Setup completed successfully! Backend on $BACKEND_URL, Frontend on http://localhost:3000${NC}"
