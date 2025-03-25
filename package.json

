@@ -1,0 +1,28 @@
+{
+  "name": "pimetaconnect",
+  "version": "1.0.0",
+  "description": "PiMetaConnect هو تطبيق ويب يستخدم Express وMongoose لإنشاء API يدعم عمليات CRUD مع تحديث تلقائي",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "build": "npm install",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ze0ro99/PiMetaConnect.git"
+  },
+  "keywords": ["تطبيق ويب", "API", "Express", "Mongoose", "CRUD"],
+  "author": "Ze0ro99",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^6.5.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22",
+    "eslint": "^8.40.0"
+  }
+}
