@@ -3,10 +3,10 @@ name: Static Site CI
 on:
   push:
     branches:
-      - main  # استبدل بـ "main" أو "master" حسب الفرع الذي تستخدمه
+      - main  # الفرع الرئيسي للمشروع
   pull_request:
     branches:
-      - main
+      - main  # الفرع المستهدف لـ Pull Requests
 
 jobs:
   build:
@@ -16,26 +16,37 @@ jobs:
       # 1. التحقق من المستودع
       - name: Check out code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # جلب كامل التاريخ لضمان عملية النشر
 
       # 2. إعداد Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'  # يمكنك استبدال الإصدار حسب الحاجة
-          cache: 'npm'  # تمت إضافة ذاكرة التخزين المؤقت لتسريع تثبيت التبعيات
+          node-version: '20'  # إصدار Node.js المطابق للمشروع
+          cache: 'npm'  # تسريع التثبيت باستخدام الذاكرة المؤقتة
 
-      # 3. تثبيت التبعيات
+      # 3. التحقق من وجود package-lock.json وتثبيت التبعيات
       - name: Install dependencies
-        run: npm ci  # استخدام npm ci لتثبيت التبعيات بشكل آمن
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "package-lock.json غير موجود. إنشاء واحد جديد..."
+            npm install --package-lock-only
+          fi
+          npm ci  # تثبيت التبعيات بناءً على package-lock.json
 
       # 4. بناء المشروع
       - name: Build
         run: npm run build
+        env:
+          NODE_ENV: production  # ضمان البناء للإنتاج
 
       # 5. النشر إلى GitHub Pages
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
+        if: github.ref == 'refs/heads/main'  # النشر فقط عند الدفع إلى main
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build  # المسار الذي يحتوي على الملفات المبنية
-          keep_files: true  # الاحتفاظ بالملفات الموجودة في الفرع gh-pages
+          github_token: ${{ secrets.GITHUB_TOKEN }}  # رمز GitHub للمصادقة
+          publish_dir: ./build  # المجلد الذي يحتوي على الملفات المبنية
+          keep_files: false  # استبدال الملفات القديمة بدلاً من الاحتفاظ بها
+          commit_message: "Deploy to GitHub Pages - ${{ github.sha }}"  # رسالة الـ Commit
