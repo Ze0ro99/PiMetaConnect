@@ -1,0 +1,92 @@
+@echo off
+set PROJECT_DIR=PiMetaConnect
+set GITHUB_REPO=https://github.com/Ze0ro99/PiMetaConnect.git
+set BRANCH=Ze0ro99-patch-1
+set MONGO_URI=mongodb://localhost:27017/pimetaconnect
+
+:: التحقق من وجود git و npm
+where git >nul 2>&1 || (echo Git غير مثبت. قم بتثبيته أولاً. && exit /b 1)
+where npm >nul 2>&1 || (echo Node.js/npm غير مثبت. قم بتثبيته أولاً. && exit /b 1)
+where vercel >nul 2>&1 || (echo Vercel CLI غير مثبت. تثبيته باستخدام: npm i -g vercel && exit /b 1)
+
+:: إنشاء المجلد واستنساخ المستودع
+if not exist "%PROJECT_DIR%" (
+    echo استنساخ المستودع...
+    git clone -b %BRANCH% %GITHUB_REPO% %PROJECT_DIR%
+    cd %PROJECT_DIR%
+) else (
+    echo المجلد موجود بالفعل. الانتقال إليه...
+    cd %PROJECT_DIR%
+    git pull origin %BRANCH%
+)
+
+:: إنشاء ملف index.js
+echo إنشاء ملف index.js...
+echo const express = require('express'); > index.js
+echo const mongoose = require('mongoose'); >> index.js
+echo const app = express(); >> index.js
+echo app.use(express.json()); >> index.js
+echo mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true }).then(() => { console.log('تم الاتصال بقاعدة البيانات'); }).catch(err => { console.error('خطأ في الاتصال:', err); }); >> index.js
+echo app.get('/', (req, res) => { res.send('PiMetaConnect يعمل بنجاح!'); }); >> index.js
+echo const port = process.env.PORT ^|^| 3000; >> index.js
+echo app.listen(port, () => { console.log(`الخادم يعمل على المنفذ ${port}`); }); >> index.js
+
+:: إنشاء ملف package.json
+echo إنشاء ملف package.json...
+echo { > package.json
+echo   "name": "pimetaconnect", >> package.json
+echo   "version": "1.0.0", >> package.json
+echo   "main": "index.js", >> package.json
+echo   "scripts": { >> package.json
+echo     "start": "node index.js", >> package.json
+echo     "dev": "nodemon index.js", >> package.json
+echo     "build": "npm install", >> package.json
+echo     "vercel-build": "npm install" >> package.json
+echo   }, >> package.json
+echo   "dependencies": { >> package.json
+echo     "express": "^4.18.2", >> package.json
+echo     "mongoose": "^6.5.2" >> package.json
+echo   }, >> package.json
+echo   "devDependencies": { >> package.json
+echo     "nodemon": "^2.0.22" >> package.json
+echo   }, >> package.json
+echo   "engines": { >> package.json
+echo     "node": "20.x" >> package.json
+echo   } >> package.json
+echo } >> package.json
+
+:: إنشاء ملف vercel.json
+echo إنشاء ملف vercel.json...
+echo { > vercel.json
+echo   "version": 2, >> vercel.json
+echo   "builds": [ >> vercel.json
+echo     { >> vercel.json
+echo       "src": "index.js", >> vercel.json
+echo       "use": "@vercel/node" >> vercel.json
+echo     } >> vercel.json
+echo   ], >> vercel.json
+echo   "routes": [ >> vercel.json
+echo     { >> vercel.json
+echo       "src": "/(.*)", >> vercel.json
+echo       "dest": "index.js" >> vercel.json
+echo     } >> vercel.json
+echo   ] >> vercel.json
+echo } >> vercel.json
+
+:: تثبيت التبعيات
+echo تثبيت التبعيات...
+npm install
+
+:: إعداد Git ورفع التغييرات
+echo إعداد Git ورفع التغييرات...
+git add .
+git commit -m "إعداد السكربت الموحد وإصلاح مشكلة Vercel"
+git push origin %BRANCH%
+
+:: نشر المشروع على Vercel
+echo نشر المشروع على Vercel...
+vercel env add MONGO_URI %MONGO_URI% production
+vercel --prod
+
+echo اكتمل الإعداد! المشروع جاهز للاستخدام.
+echo رابط النشر سيظهر في السجل أعلاه. قم بزيارته للتأكد من عمل التطبيق.
