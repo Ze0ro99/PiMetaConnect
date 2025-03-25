@@ -1,74 +1,97 @@
 #!/bin/bash
 
-# Step 1: تثبيت المكتبات المطلوبة
-echo "Installing necessary packages..."
-npm install express mongoose cors dotenv
+# تعيين المتغيرات
+PROJECT_DIR="PiMetaConnect"
+MONGO_URI="mongodb+srv://Ze0ro99:<db_password>@cluster0.rinh3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0" # استبدل <db_password>
 
-# Step 2: إنشاء ملف البيئة .env
-echo "Creating .env file..."
-cat <<EOL > .env
-PORT=3000
-MONGO_URI=your_mongodb_connection_string
-VALIDATION_KEY=5d8bc63cfa473df9a90c3308432e255c892f4b363143dfd8fa98c6c44d1b0bda13b78ce5a9c195b1648220c33a7b4f026b8176c0a0c87ba421c309533a57480c
+# التحقق من الأدوات المطلوبة
+command -v npm >/dev/null 2>&1 || { echo "Node.js/npm غير مثبت. قم بتثبيته أولاً."; exit 1; }
+
+# إنشاء المجلد إذا لم يكن موجودًا
+if [ ! -d "$PROJECT_DIR" ]; then
+    echo "إنشاء مجلد المشروع..."
+    mkdir "$PROJECT_DIR"
+fi
+cd "$PROJECT_DIR"
+
+# إنشاء ملف package.json
+echo "إنشاء ملف package.json..."
+cat > package.json << 'EOL'
+{
+  "name": "pimetaconnect",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^6.5.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  },
+  "engines": {
+    "node": "20.x"
+  }
+}
 EOL
 
-# Step 3: إعداد مسارات API
-echo "Setting up API routes..."
-mkdir -p routes
-cat <<EOL > routes/transactions.js
-const express = require('express');
-const router = express.Router();
+# تثبيت التبعيات
+echo "تثبيت التبعيات..."
+npm install
 
-// مثال على مسار GET
-router.get('/', (req, res) => {
-    res.send('Transactions API');
-});
-
-module.exports = router;
-EOL
-
-# Step 4: إعداد ملف server.js
-echo "Setting up server.js..."
-cat <<EOL > server.js
+# إنشاء ملف index.js
+echo "إنشاء ملف index.js..."
+cat > index.js << EOL
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors');
-require('dotenv').config();
-
 const app = express();
-const port = process.env.PORT || 3000;
 
-// تمكين CORS
-app.use(cors({
-    origin: '‏https://meta-connect-kiawcb5bh-zero99s-projects.vercel.app/validation-key.txt‏' // استبدل هذا بالنطاق الصحيح لتطبيقك
-}));
+// رابط الاتصال بـ MongoDB
+const uri = "$MONGO_URI";
+const clientOptions = { serverApi: { version: '1', strict: true, deprecationErrors: true } };
 
-// لت解析 طلبات JSON
+// Middleware لتحليل طلبات JSON
 app.use(express.json());
 
-// الاتصال بقاعدة البيانات
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(() => console.log("MongoDB connected"))
-    .catch(err => console.error("MongoDB connection error:", err));
+// الاتصال بـ MongoDB
+async function connectToMongoDB() {
+    try {
+        await mongoose.connect(uri, clientOptions);
+        await mongoose.connection.db.admin().command({ ping: 1 });
+        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    } catch (error) {
+        console.error("فشل الاتصال بـ MongoDB:", error);
+        process.exit(1);
+    }
+}
 
-// مسارات API
-app.use('/api/transactions', require('./routes/transactions'));
+// تشغيل الاتصال
+connectToMongoDB();
 
-// تقديم الملفات الثابتة
-app.use(express.static('public'));
+// مسار اختباري
+app.get('/', (req, res) => {
+    res.send('PiMetaConnect يعمل بنجاح مع MongoDB!');
+});
 
-// بدء الخادم
+// تشغيل الخادم
+const port = process.env.PORT || 3000;
 app.listen(port, () => {
-    console.log(\`Server running at http://localhost:\${port}\`);
+    console.log(\`الخادم يعمل على المنفذ \${port}\`);
+});
+
+// التعامل مع إغلاق الخادم
+process.on('SIGINT', async () => {
+    await mongoose.disconnect();
+    console.log('تم قطع الاتصال بـ MongoDB بنجاح.');
+    process.exit(0);
 });
 EOL
 
-# Step 5: إنشاء ملف validation-key.txt ورفعه إلى النطاق
-echo "Creating validation-key.txt..."
-cat <<EOL > public/validation-key.txt
-5d8bc63cfa473df9a90c3308432e255c892f4b363143dfd8fa98c6c44d1b0bda13b78ce5a9c195b1648220c33a7b4f026b8176c0a0c87ba421c309533a57480c
-EOL
+# تشغيل التطبيق
+echo "تشغيل التطبيق..."
+npm start &
 
-# Step 6: تشغيل الخادم
-echo "Starting the server..."
-node server.js
+echo "اكتمل الإعداد! التطبيق يعمل على http://localhost:3000"

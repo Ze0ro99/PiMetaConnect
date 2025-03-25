@@ -1,0 +1,84 @@
+// index.js
+const express = require('express');
+const mongoose = require('mongoose');
+const app = express();
+const port = process.env.PORT || 3000;
+
+// Middleware لتحليل طلبات JSON
+app.use(express.json());
+
+// الاتصال بـ MongoDB
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/pimetaconnect', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+}).then(() => {
+    console.log('تم الاتصال بقاعدة البيانات بنجاح');
+}).catch(err => {
+    console.error('خطأ في الاتصال بقاعدة البيانات:', err);
+});
+
+// تعريف نموذج بسيط (مثال)
+const ItemSchema = new mongoose.Schema({
+    name: String,
+    description: String,
+    date: { type: Date, default: Date.now }
+});
+const Item = mongoose.model('Item', ItemSchema);
+
+// عمليات CRUD
+// إنشاء عنصر جديد
+app.post('/api/items', async (req, res) => {
+    try {
+        const item = new Item(req.body);
+        await item.save();
+        res.status(201).json(item);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// قراءة جميع العناصر
+app.get('/api/items', async (req, res) => {
+    try {
+        const items = await Item.find();
+        res.json(items);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// تحديث عنصر
+app.put('/api/items/:id', async (req, res) => {
+    try {
+        const item = await Item.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!item) return res.status(404).json({ message: 'العنصر غير موجود' });
+        res.json(item);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// حذف عنصر
+app.delete('/api/items/:id', async (req, res) => {
+    try {
+        const item = await Item.findByIdAndDelete(req.params.id);
+        if (!item) return res.status(404).json({ message: 'العنصر غير موجود' });
+        res.json({ message: 'تم الحذف بنجاح' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// تشغيل الخادم
+app.listen(port, () => {
+    console.log(`الخادم يعمل على المنفذ ${port}`);
+});
+
+// تحديث تلقائي (للـ development)
+if (process.env.NODE_ENV !== 'production') {
+    const { exec } = require('child_process');
+    exec('git pull', (err, stdout, stderr) => {
+        if (err) console.error('خطأ في التحديث التلقائي:', err);
+        else console.log('تم التحديث التلقائي:', stdout);
+    });
+}

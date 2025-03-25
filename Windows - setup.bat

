@@ -1,0 +1,84 @@
+@echo off
+set PROJECT_DIR=PiMetaConnect
+set MONGO_URI=mongodb+srv://Ze0ro99:<db_password>@cluster0.rinh3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+
+:: التحقق من الأدوات
+where npm >nul 2>&1 || (echo Node.js/npm غير مثبت. قم بتثبيته أولاً. && exit /b 1)
+
+:: إنشاء المجلد
+if not exist "%PROJECT_DIR%" (
+    echo إنشاء مجلد المشروع...
+    mkdir %PROJECT_DIR%
+)
+cd %PROJECT_DIR%
+
+:: إنشاء ملف package.json
+echo إنشاء ملف package.json...
+echo { > package.json
+echo   "name": "pimetaconnect", >> package.json
+echo   "version": "1.0.0", >> package.json
+echo   "main": "index.js", >> package.json
+echo   "scripts": { >> package.json
+echo     "start": "node index.js", >> package.json
+echo     "dev": "nodemon index.js" >> package.json
+echo   }, >> package.json
+echo   "dependencies": { >> package.json
+echo     "express": "^4.18.2", >> package.json
+echo     "mongoose": "^6.5.2" >> package.json
+echo   }, >> package.json
+echo   "devDependencies": { >> package.json
+echo     "nodemon": "^2.0.22" >> package.json
+echo   }, >> package.json
+echo   "engines": { >> package.json
+echo     "node": "20.x" >> package.json
+echo   } >> package.json
+echo } >> package.json
+
+:: تثبيت التبعيات
+echo تثبيت التبعيات...
+npm install
+
+:: إنشاء ملف index.js
+echo إنشاء ملف index.js...
+echo const express = require('express'); > index.js
+echo const mongoose = require('mongoose'); >> index.js
+echo const app = express(); >> index.js
+echo. >> index.js
+echo const uri = "%MONGO_URI%"; >> index.js
+echo const clientOptions = { serverApi: { version: '1', strict: true, deprecationErrors: true } }; >> index.js
+echo. >> index.js
+echo app.use(express.json()); >> index.js
+echo. >> index.js
+echo async function connectToMongoDB() { >> index.js
+echo     try { >> index.js
+echo         await mongoose.connect(uri, clientOptions); >> index.js
+echo         await mongoose.connection.db.admin().command({ ping: 1 }); >> index.js
+echo         console.log("Pinged your deployment. You successfully connected to MongoDB!"); >> index.js
+echo     } catch (error) { >> index.js
+echo         console.error("فشل الاتصال بـ MongoDB:", error); >> index.js
+echo         process.exit(1); >> index.js
+echo     } >> index.js
+echo } >> index.js
+echo. >> index.js
+echo connectToMongoDB(); >> index.js
+echo. >> index.js
+echo app.get('/', (req, res) => { >> index.js
+echo     res.send('PiMetaConnect يعمل بنجاح مع MongoDB!'); >> index.js
+echo }); >> index.js
+echo. >> index.js
+echo const port = process.env.PORT ^|^| 3000; >> index.js
+echo app.listen(port, () => { >> index.js
+echo     console.log(`الخادم يعمل على المنفذ ${port}`); >> index.js
+echo }); >> index.js
+echo. >> index.js
+echo process.on('SIGINT', async () => { >> index.js
+echo     await mongoose.disconnect(); >> index.js
+echo     console.log('تم قطع الاتصال بـ MongoDB بنجاح.'); >> index.js
+echo     process.exit(0); >> index.js
+echo }); >> index.js
+
+:: تشغيل التطبيق
+echo تشغيل التطبيق...
+start npm start
+
+echo اكتمل الإعداد! التطبيق يعمل على http://localhost:3000
