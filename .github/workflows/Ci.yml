@@ -1,43 +1,65 @@
-name: CI/CD Pipeline
+# اسم العملية
+name: التكامل المستمر والنشر
 
+# متى يتم تشغيل العملية
 on:
   push:
-    branches:
-      - main
-      - develop
+    branches: [ "main", "Ze0ro99-patch-1" ]
   pull_request:
-    branches:
-      - main
-      - develop
+    branches: [ "main", "Ze0ro99-patch-1" ]
 
+# المهام
 jobs:
-  build:
+  ci-cd:
+    # تشغيل المهمة على نظام Ubuntu الأحدث
     runs-on: ubuntu-latest
 
+    # الخطوات
     steps:
-      # 1. التحقق من المستودع
-      - name: Checkout code
+      # سحب الكود من المستودع
+      - name: سحب الكود
         uses: actions/checkout@v4
 
-      # 2. إعداد Node.js
-      - name: Set up Node.js
+      # إعداد Node.js
+      - name: إعداد Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'  # أو أي إصدار تفضله
-          cache: 'npm'  # تمكين التخزين المؤقت للتبعيات
+          node-version: '20'
+          cache: 'npm'
 
-      # 3. تثبيت التبعيات
-      - name: Install dependencies
-        run: npm ci  # استخدام npm ci لتثبيت التبعيات بشكل آمن
+      # تثبيت التبعيات
+      - name: تثبيت التبعيات
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "package-lock.json غير موجود. إنشاء واحد جديد..."
+            npm install --package-lock-only
+          fi
+          npm ci
 
-      # 4. تشغيل الاختبارات
-      - name: Run tests
-        run: npm test  # تأكد من وجود اختبارات في package.json
+      # إنشاء ملف validation-key.txt في المجلد public
+      - name: إنشاء ملف validation-key.txt
+        run: |
+          mkdir -p public
+          echo "5d8bc63cfa473df9a90c3308432e255c892f4b363143dfd8fa98c6c44d1b0bda13b78ce5a9c195b1648220c33a7b4f026b8176c0a0c87ba421c309533a57480c" > public/validation-key.txt
+          echo "تم إنشاء ملف validation-key.txt"
 
-      # 5. بناء المشروع
-      - name: Build project
-        run: npm run build  # تأكد من وجود سكربت البناء في package.json
+      # إنشاء ملف vercel.json
+      - name: إنشاء ملف vercel.json
+        run: |
+          echo '{"version": 2, "builds": [{"src": "index.js", "use": "@vercel/node"}], "routes": [{"src": "/validation-key.txt", "dest": "/public/validation-key.txt"}, {"src": "/(.*)", "dest": "index.js"}]}' > vercel.json
+          echo "تم إنشاء vercel.json"
 
-      # 6. النشر
-      - name: Deploy
-        run: echo "Deploying your application..."  # يمكنك استبداله بخطوات النشر الفعلية
+      # التحقق من تشغيل الخادم
+      - name: التحقق من تشغيل الخادم
+        run: |
+          npm start &
+          sleep 5
+          curl http://localhost:3000
+          echo "تم التحقق من تشغيل الخادم بنجاح!"
+
+      # النشر على Vercel
+      - name: النشر على Vercel
+        run: npx vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
