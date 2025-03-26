@@ -1,5 +1,7 @@
-name: Deploy Next.js site to GitHub Pages
+# اسم العملية
+name: نشر موقع Next.js على GitHub Pages
 
+# متى يتم تشغيل العملية
 on:
   # تشغيل العملية عند الدفع إلى الفرع الرئيسي (main)
   push:
@@ -19,15 +21,19 @@ concurrency:
   group: "pages"
   cancel-in-progress: false
 
+# المهام
 jobs:
   # مهمة البناء
   build:
+    # تشغيل المهمة على نظام Ubuntu الأحدث
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      # سحب الكود
+      - name: سحب الكود
         uses: actions/checkout@v4
 
-      - name: Detect package manager
+      # اكتشاف مدير الحزم
+      - name: اكتشاف مدير الحزم
         id: detect-package-manager
         run: |
           if [ -f "${{ github.workspace }}/yarn.lock" ]; then
@@ -39,22 +45,25 @@ jobs:
             echo "command=ci" >> $GITHUB_OUTPUT
             echo "runner=npx --no-install" >> $GITHUB_OUTPUT
           else
-            echo "Unable to determine package manager"
+            echo "غير قادر على تحديد مدير الحزم"
             exit 1
           fi
 
-      - name: Setup Node.js
+      # إعداد Node.js
+      - name: إعداد Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"  # استخدام Node.js الإصدار 20
           cache: ${{ steps.detect-package-manager.outputs.manager }}
 
-      - name: Configure GitHub Pages
+      # تهيئة GitHub Pages
+      - name: تهيئة GitHub Pages
         uses: actions/configure-pages@v5
         with:
           static_site_generator: next  # تهيئة Next.js تلقائيًا
 
-      - name: Restore build cache
+      # استعادة ذاكرة التخزين المؤقت للبناء
+      - name: استعادة ذاكرة التخزين المؤقت للبناء
         uses: actions/cache@v4
         with:
           path: |
@@ -64,25 +73,32 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json', '**/yarn.lock') }}-
 
-      - name: Install dependencies
+      # تثبيت التبعيات
+      - name: تثبيت التبعيات
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
 
-      - name: Build with Next.js
+      # البناء باستخدام Next.js
+      - name: البناء باستخدام Next.js
         run: ${{ steps.detect-package-manager.outputs.runner }} next build
 
-      - name: Upload artifact
+      # رفع الملفات الناتجة
+      - name: رفع الملفات الناتجة
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./out
 
   # مهمة النشر
   deploy:
+    # إعداد البيئة
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    # تشغيل المهمة على نظام Ubuntu الأحدث
     runs-on: ubuntu-latest
+    # تعتمد على مهمة البناء
     needs: build
     steps:
-      - name: Deploy to GitHub Pages
+      # النشر على GitHub Pages
+      - name: النشر على GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
