@@ -1,15 +1,19 @@
 @echo off
 set PROJECT_DIR=PiMetaConnect
-set MONGO_URI=mongodb+srv://Ze0ro99:<db_password>@cluster0.rinh3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+set GITHUB_REPO=https://github.com/Ze0ro99/PiMetaConnect.git
+set BRANCH=Ze0ro99-patch-1
+set MONGO_URI=mongodb+srv://Ze0ro99:<db_password>@cluster0.rinh3.mongodb.net/pimetaconnect?retryWrites=true&w=majority&appName=Cluster0
+set VALIDATION_KEY=5d8bc63cfa473df9a90c3308432e255c892f4b363143dfd8fa98c6c44d1b0bda13b78ce5a9c195b1648220c33a7b4f026b8176c0a0c87ba421c309533a57480c
 
 :: التحقق من الأدوات
+where git >nul 2>&1 || (echo Git غير مثبت. قم بتثبيته أولاً. && exit /b 1)
 where npm >nul 2>&1 || (echo Node.js/npm غير مثبت. قم بتثبيته أولاً. && exit /b 1)
+where vercel >nul 2>&1 || (echo Vercel CLI غير مثبت. تثبيته باستخدام: npm i -g vercel && exit /b 1)
 
-:: إنشاء المجلد
-if not exist "%PROJECT_DIR%" (
-    echo إنشاء مجلد المشروع...
-    mkdir %PROJECT_DIR%
-)
+:: إعادة تهيئة المشروع
+echo إعادة تهيئة المشروع...
+rmdir /s /q %PROJECT_DIR%
+git clone -b %BRANCH% %GITHUB_REPO% %PROJECT_DIR%
 cd %PROJECT_DIR%
 
 :: إنشاء ملف package.json
@@ -20,7 +24,9 @@ echo   "version": "1.0.0", >> package.json
 echo   "main": "index.js", >> package.json
 echo   "scripts": { >> package.json
 echo     "start": "node index.js", >> package.json
-echo     "dev": "nodemon index.js" >> package.json
+echo     "dev": "nodemon index.js", >> package.json
+echo     "build": "npm install", >> package.json
+echo     "vercel-build": "npm install" >> package.json
 echo   }, >> package.json
 echo   "dependencies": { >> package.json
 echo     "express": "^4.18.2", >> package.json
@@ -34,17 +40,13 @@ echo     "node": "20.x" >> package.json
 echo   } >> package.json
 echo } >> package.json
 
-:: تثبيت التبعيات
-echo تثبيت التبعيات...
-npm install
-
 :: إنشاء ملف index.js
 echo إنشاء ملف index.js...
 echo const express = require('express'); > index.js
 echo const mongoose = require('mongoose'); >> index.js
 echo const app = express(); >> index.js
 echo. >> index.js
-echo const uri = "%MONGO_URI%"; >> index.js
+echo const uri = process.env.MONGO_URI ^|^| "%MONGO_URI%"; >> index.js
 echo const clientOptions = { serverApi: { version: '1', strict: true, deprecationErrors: true } }; >> index.js
 echo. >> index.js
 echo app.use(express.json()); >> index.js
@@ -77,8 +79,103 @@ echo     console.log('تم قطع الاتصال بـ MongoDB بنجاح.'); >> 
 echo     process.exit(0); >> index.js
 echo }); >> index.js
 
-:: تشغيل التطبيق
-echo تشغيل التطبيق...
-start npm start
+:: إنشاء ملف vercel.json
+echo إنشاء ملف vercel.json...
+echo { > vercel.json
+echo   "version": 2, >> vercel.json
+echo   "builds": [ >> vercel.json
+echo     { >> vercel.json
+echo       "src": "index.js", >> vercel.json
+echo       "use": "@vercel/node" >> vercel.json
+echo     } >> vercel.json
+echo   ], >> vercel.json
+echo   "routes": [ >> vercel.json
+echo     { >> vercel.json
+echo       "src": "/validation-key.txt", >> vercel.json
+echo       "dest": "/public/validation-key.txt" >> vercel.json
+echo     }, >> vercel.json
+echo     { >> vercel.json
+echo       "src": "/(.*)", >> vercel.json
+echo       "dest": "index.js" >> vercel.json
+echo     } >> vercel.json
+echo   ] >> vercel.json
+echo } >> vercel.json
 
-echo اكتمل الإعداد! التطبيق يعمل على http://localhost:3000
+:: إنشاء ملف validation-key.txt في المجلد public
+echo إنشاء ملف validation-key.txt...
+mkdir public
+echo %VALIDATION_KEY% > public\validation-key.txt
+
+:: إنشاء ملف GitHub Actions (static.yml)
+echo إنشاء ملف static.yml لـ GitHub Actions...
+mkdir .github\workflows
+echo name: Deploy to Vercel > .github\workflows\static.yml
+echo. >> .github\workflows\static.yml
+echo on: >> .github\workflows\static.yml
+echo   push: >> .github\workflows\static.yml
+echo     branches: >> .github\workflows\static.yml
+echo       - main >> .github\workflows\static.yml
+echo       - Ze0ro99-patch-1 >> .github\workflows\static.yml
+echo   pull_request: >> .github\workflows\static.yml
+echo     branches: >> .github\workflows\static.yml
+echo       - main >> .github\workflows\static.yml
+echo       - Ze0ro99-patch-1 >> .github\workflows\static.yml
+echo. >> .github\workflows\static.yml
+echo jobs: >> .github\workflows\static.yml
+echo   deploy: >> .github\workflows\static.yml
+echo     runs-on: ubuntu-latest >> .github\workflows\static.yml
+echo. >> .github\workflows\static.yml
+echo     steps: >> .github\workflows\static.yml
+echo       - name: Check out code >> .github\workflows\static.yml
+echo         uses: actions/checkout@v4 >> .github\workflows\static.yml
+echo         with: >> .github\workflows\static.yml
+echo           fetch-depth: 0 >> .github\workflows\static.yml
+echo. >> .github\workflows\static.yml
+echo       - name: Set up Node.js >> .github\workflows\static.yml
+echo         uses: actions/setup-node@v4 >> .github\workflows\static.yml
+echo         with: >> .github\workflows\static.yml
+echo           node-version: '20' >> .github\workflows\static.yml
+echo           cache: 'npm' >> .github\workflows\static.yml
+echo. >> .github\workflows\static.yml
+echo       - name: Install dependencies >> .github\workflows\static.yml
+echo         run: ^| >> .github\workflows\static.yml
+echo           if [ ! -f package-lock.json ]; then >> .github\workflows\static.yml
+echo             echo "package-lock.json غير موجود. إنشاء واحد جديد..." >> .github\workflows\static.yml
+echo             npm install --package-lock-only >> .github\workflows\static.yml
+echo           fi >> .github\workflows\static.yml
+echo           npm ci >> .github\workflows\static.yml
+echo. >> .github\workflows\static.yml
+echo       - name: Create Vercel configuration >> .github\workflows\static.yml
+echo         run: ^| >> .github\workflows\static.yml
+echo           echo '{"version": 2, "builds": [{"src": "index.js", "use": "@vercel/node"}], "routes": [{"src": "/validation-key.txt", "dest": "/public/validation-key.txt"}, {"src": "/(.*)", "dest": "index.js"}]}' > vercel.json >> .github\workflows\static.yml
+echo           echo "تم إنشاء vercel.json" >> .github\workflows\static.yml
+echo. >> .github\workflows\static.yml
+echo       - name: Deploy to Vercel >> .github\workflows\static.yml
+echo         run: npx vercel --prod --token ${{ secrets.VERCEL_TOKEN }} >> .github\workflows\static.yml
+echo         env: >> .github\workflows\static.yml
+echo           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }} >> .github\workflows\static.yml
+echo           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }} >> .github\workflows\static.yml
+
+:: تنظيف المجلدات المتداخلة
+echo تنظيف المجلدات المتداخلة...
+rmdir /s /q backend vercel path0 npm 2>nul
+
+:: تثبيت التبعيات
+echo تثبيت التبعيات...
+npm install
+
+:: إعداد Git ورفع التغييرات
+echo إعداد Git ورفع التغييرات...
+git add .
+git commit -m "إضافة validation-key.txt للتحقق ونشر المشروع على Vercel"
+git push origin %BRANCH%
+
+:: نشر المشروع على Vercel
+echo نشر المشروع على Vercel...
+vercel env rm MONGO_URI production -y 2>nul
+vercel env add MONGO_URI %MONGO_URI% production
+vercel --prod
+
+echo اكتمل الإعداد! المشروع جاهز.
+echo تحقق من ملف validation-key.txt على: https://meta-connect-kiawcb5bh-ze0ro99s-projects.vercel.app/validation-key.txt
+echo بعد التأكد، انقر على زر 'Verify' في منصة التحقق.
