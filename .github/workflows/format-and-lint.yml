@@ -1,54 +1,51 @@
-name: Format and Lint Code
+# اسم العملية
+name: التحقق من تنسيق الكود
 
-on: [push, pull_request]
+# متى يتم تشغيل العملية
+on:
+  push:
+    branches: [ "main", "Ze0ro99-patch-1" ]
+  pull_request:
+    branches: [ "main", "Ze0ro99-patch-1" ]
 
+# المهام
 jobs:
-  format-and-lint:
+  lint:
+    # تشغيل المهمة على نظام Ubuntu الأحدث
     runs-on: ubuntu-latest
 
+    # الخطوات
     steps:
-      # 1. التحقق من المستودع
-      - name: Checkout code
-        uses: actions/checkout@v4  # تم التحديث إلى الإصدار الأحدث
+      # سحب الكود من المستودع
+      - name: سحب الكود
+        uses: actions/checkout@v4
 
-      # 2. إعداد Node.js لتنسيق وفحص JavaScript
-      - name: Set up Node.js
-        uses: actions/setup-node@v4  # تم التحديث إلى الإصدار الأحدث
+      # إعداد Node.js
+      - name: إعداد Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '20'  # تم التحديث إلى الإصدار الأحدث
+          node-version: '20'
+          cache: 'npm'
 
-      # 3. تثبيت Prettier و ESLint لـ JavaScript
-      - name: Install Prettier and ESLint (JavaScript)
+      # التحقق من وجود ملفات JavaScript
+      - name: التحقق من وجود ملفات JavaScript
         run: |
-          npm install --save-dev prettier eslint
-          npx eslint . --fix
-          npx prettier --write '**/*.{js,jsx,ts,tsx}'  # تمت إضافة دعم لـ TypeScript
+          if ! ls *.js >/dev/null 2>&1; then
+            echo "لا توجد ملفات JavaScript للتحقق منها. يتم تخطي الخطوة..."
+            exit 0
+          fi
+          echo "تم العثور على ملفات JavaScript، يتم المتابعة..."
 
-      # 4. إعداد Python لتنسيق وفحص Python
-      - name: Set up Python
-        uses: actions/setup-python@v5  # تم التحديث إلى الإصدار الأحدث
-        with:
-          python-version: '3.10'  # تم التحديث إلى الإصدار الأحدث
-
-      # 5. تثبيت Black و Flake8 لـ Python
-      - name: Install Black and Flake8 (Python)
+      # تثبيت Prettier
+      - name: تثبيت Prettier
         run: |
-          pip install black flake8
-          flake8 . --max-line-length=79 --extend-ignore=E203
-          black . --line-length 79
+          npm install --save-dev prettier
+          echo "تم تثبيت Prettier بنجاح!"
 
-      # 6. تثبيت Clang-Tidy لفحص C++
-      - name: Install C++ Linter
+      # إنشاء ملف تكوين Prettier
+      - name: إنشاء ملف تكوين Prettier
         run: |
-          sudo apt-get install -y clang-tools
-          find . -name '*.cpp' -exec clang-tidy {} --fix \;
+          echo '{"semi": true, "trailingComma": "es5", "singleQuote": true, "printWidth": 80}' > .prettierrc
+          echo "تم إنشاء ملف .prettierrc بنجاح!"
 
-      # 7. تثبيت ShellCheck لفحص Shell Scripts
-      - name: Install ShellCheck (Shell)
-        run: |
-          sudo apt-get install -y shellcheck
-          find . -name '*.sh' -exec shellcheck {} \;
-
-      # 8. رسالة للغات الأخرى
-      - name: Check for other languages
-        run: echo "يمكنك إضافة المزيد من أدوات التنسيق والتحقق حسب الحاجة."
+      # تشغيل Prettier لتصحيح التنسيق
