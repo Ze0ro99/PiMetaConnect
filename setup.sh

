@@ -63,7 +63,7 @@ async function connectToMongoDB() {
     try {
         await mongoose.connect(uri, clientOptions);
         await mongoose.connection.db.admin().command({ ping: 1 });
-        console.log("تم اختبار النشر. لقد نجحت في الاتصال بـ MongoDB!");
+        console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } catch (error) {
         console.error("فشل الاتصال بـ MongoDB:", error);
         process.exit(1);
@@ -114,6 +114,87 @@ cat > vercel.json << 'EOL'
     }
   ]
 }
-...
+EOL
 
-حدث خطأ ما، يُرجى إعادة المحاولة.
+# إنشاء ملف validation-key.txt في المجلد public
+echo "إنشاء ملف validation-key.txt..."
+mkdir -p public
+cat > public/validation-key.txt << EOL
+$VALIDATION_KEY
+EOL
+
+# إنشاء ملف GitHub Actions (static.yml)
+echo "إنشاء ملف static.yml لـ GitHub Actions..."
+mkdir -p .github/workflows
+cat > .github/workflows/static.yml << 'EOL'
+name: Deploy to Vercel
+
+on:
+  push:
+    branches:
+      - main
+      - Ze0ro99-patch-1
+  pull_request:
+    branches:
+      - main
+      - Ze0ro99-patch-1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "package-lock.json غير موجود. إنشاء واحد جديد..."
+            npm install --package-lock-only
+          fi
+          npm ci
+
+      - name: Create Vercel configuration
+        run: |
+          echo '{"version": 2, "builds": [{"src": "index.js", "use": "@vercel/node"}], "routes": [{"src": "/validation-key.txt", "dest": "/public/validation-key.txt"}, {"src": "/(.*)", "dest": "index.js"}]}' > vercel.json
+          echo "تم إنشاء vercel.json"
+
+      - name: Deploy to Vercel
+        run: npx vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+EOL
+
+# تنظيف المجلدات المتداخلة لحل EISDIR
+echo "تنظيف المجلدات المتداخلة..."
+rm -rf backend vercel path0 npm 2>/dev/null
+
+# تثبيت التبعيات
+echo "تثبيت التبعيات..."
+npm install
+
+# إعداد Git ورفع التغييرات
+echo "إعداد Git ورفع التغييرات..."
+git add .
+git commit -m "إضافة validation-key.txt للتحقق ونشر المشروع على Vercel"
+git push origin "$BRANCH"
+
+# نشر المشروع على Vercel
+echo "نشر المشروع على Vercel..."
+vercel env rm MONGO_URI production -y 2>/dev/null
+vercel env add MONGO_URI "$MONGO_URI" production
+vercel --prod
+
+echo "اكتمل الإعداد! المشروع جاهز."
+echo "تحقق من ملف validation-key.txt على: https://meta-connect-kiawcb5bh-ze0ro99s-projects.vercel.app/validation-key.txt"
+echo "بعد التأكد، انقر على زر 'Verify' في منصة التحقق."
