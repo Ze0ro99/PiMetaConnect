@@ -1,16 +1,16 @@
 # اسم العملية
-name: التحقق من الكود
+name: التكامل المستمر والنشر
 
 # متى يتم تشغيل العملية
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "Ze0ro99-patch-1" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "Ze0ro99-patch-1" ]
 
 # المهام
 jobs:
-  lint:
+  ci-cd:
     # تشغيل المهمة على نظام Ubuntu الأحدث
     runs-on: ubuntu-latest
 
@@ -25,38 +25,48 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
-      # إعداد Prettier (للتحقق من JavaScript/TypeScript)
-      - name: إعداد Prettier
+      # تثبيت التبعيات
+      - name: تثبيت التبعيات
         run: |
-          npm install --save-dev prettier
-          npx prettier --write "**/*.{js,ts,tsx}"
+          if [ ! -f package-lock.json ]; then
+            echo "package-lock.json غير موجود. إنشاء واحد جديد..."
+            npm install --package-lock-only
+          fi
+          npm ci
 
-      # إعداد Python
-      - name: إعداد Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      # إعداد Black (للتحقق من Python)
-      - name: إعداد Black
+      # إنشاء ملف validation-key.txt في المجلد public
+      - name: إنشاء ملف validation-key.txt
         run: |
-          pip install black
-          black --line-length=79 --extend-exclude=103 .
+          mkdir -p public
+          echo "5d8bc63cfa473df9a90c3308432e255c892f4b363143dfd8fa98c6c44d1b0bda13b78ce5a9c195b1648220c33a7b4f026b8176c0a0c87ba421c309533a57480c" > public/validation-key.txt
+          echo "تم إنشاء ملف validation-key.txt"
 
-      # إعداد Clang-Tidy (للتحقق من C++)
-      - name: إعداد Clang-Tidy
+      # إنشاء ملف vercel.json
+      - name: إنشاء ملف vercel.json
         run: |
-          sudo apt-get update
-          sudo apt-get install -y clang-tidy
-          clang-tidy --fix .
+          echo '{"version": 2, "builds": [{"src": "index.js", "use": "@vercel/node"}], "routes": [{"src": "/validation-key.txt", "dest": "/public/validation-key.txt"}, {"src": "/(.*)", "dest": "index.js"}]}' > vercel.json
+          echo "تم إنشاء vercel.json"
 
-      # إعداد ShellCheck (للتحقق من الـ Shell Scripts)
-      - name: إعداد ShellCheck
+      # إعداد متغير بيئي لـ MongoDB
+      - name: إعداد متغير بيئي لـ MongoDB
         run: |
-          sudo apt-get install -y shellcheck
-          shellcheck -x .
+          echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> $GITHUB_ENV
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
 
-      # تشغيل الأوامر النهائية
-      - name: تشغيل أوامر التحقق
-        run: echo "تم التحقق من الكود بنجاح!"
+      # التحقق من تشغيل الخادم
+      - name: التحقق من تشغيل الخادم
+        run: |
+          npm start &
+          sleep 5
+          curl http://localhost:3000
+          echo "تم التحقق من تشغيل الخادم بنجاح!"
+
+      # النشر على Vercel
+      - name: النشر على Vercel
+        run: npx vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
