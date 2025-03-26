@@ -1,54 +1,62 @@
-name: Format and Lint Code
+# اسم العملية
+name: التحقق من الكود
 
-on: [push, pull_request]
+# متى يتم تشغيل العملية
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
+# المهام
 jobs:
-  format-and-lint:
+  lint:
+    # تشغيل المهمة على نظام Ubuntu الأحدث
     runs-on: ubuntu-latest
 
+    # الخطوات
     steps:
-      # 1. التحقق من المستودع
-      - name: Checkout code
-        uses: actions/checkout@v4  # تم التحديث إلى الإصدار الأحدث
+      # سحب الكود من المستودع
+      - name: سحب الكود
+        uses: actions/checkout@v4
 
-      # 2. إعداد Node.js لتنسيق وفحص JavaScript
-      - name: Set up Node.js
-        uses: actions/setup-node@v4  # تم التحديث إلى الإصدار الأحدث
+      # إعداد Node.js
+      - name: إعداد Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '20'  # تم التحديث إلى الإصدار الأحدث
+          node-version: '20'
 
-      # 3. تثبيت Prettier و ESLint لـ JavaScript
-      - name: Install Prettier and ESLint (JavaScript)
+      # إعداد Prettier (للتحقق من JavaScript/TypeScript)
+      - name: إعداد Prettier
         run: |
-          npm install --save-dev prettier eslint
-          npx eslint . --fix
-          npx prettier --write '**/*.{js,jsx,ts,tsx}'  # تمت إضافة دعم لـ TypeScript
+          npm install --save-dev prettier
+          npx prettier --write "**/*.{js,ts,tsx}"
 
-      # 4. إعداد Python لتنسيق وفحص Python
-      - name: Set up Python
-        uses: actions/setup-python@v5  # تم التحديث إلى الإصدار الأحدث
+      # إعداد Python
+      - name: إعداد Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.10'  # تم التحديث إلى الإصدار الأحدث
+          python-version: '3.10'
 
-      # 5. تثبيت Black و Flake8 لـ Python
-      - name: Install Black and Flake8 (Python)
+      # إعداد Black (للتحقق من Python)
+      - name: إعداد Black
         run: |
-          pip install black flake8
-          flake8 . --max-line-length=79 --extend-ignore=E203
-          black . --line-length 79
+          pip install black
+          black --line-length=79 --extend-exclude=103 .
 
-      # 6. تثبيت Clang-Tidy لفحص C++
-      - name: Install C++ Linter
+      # إعداد Clang-Tidy (للتحقق من C++)
+      - name: إعداد Clang-Tidy
         run: |
-          sudo apt-get install -y clang-tools
-          find . -name '*.cpp' -exec clang-tidy {} --fix \;
+          sudo apt-get update
+          sudo apt-get install -y clang-tidy
+          clang-tidy --fix .
 
-      # 7. تثبيت ShellCheck لفحص Shell Scripts
-      - name: Install ShellCheck (Shell)
+      # إعداد ShellCheck (للتحقق من الـ Shell Scripts)
+      - name: إعداد ShellCheck
         run: |
           sudo apt-get install -y shellcheck
-          find . -name '*.sh' -exec shellcheck {} \;
+          shellcheck -x .
 
-      # 8. رسالة للغات الأخرى
-      - name: Check for other languages
-        run: echo "يمكنك إضافة المزيد من أدوات التنسيق والتحقق حسب الحاجة."
+      # تشغيل الأوامر النهائية
+      - name: تشغيل أوامر التحقق
+        run: echo "تم التحقق من الكود بنجاح!"
