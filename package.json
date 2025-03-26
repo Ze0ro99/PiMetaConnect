@@ -1,33 +1,31 @@
 {
-  "name": "metaconnect",
+  "name": "pimetaconnect",
   "version": "1.0.0",
-  "description": "A Web3 application for exploring the metaverse and interacting with others.",
+  "description": "A Web3 application for connecting to the Pi Network and interacting with the metaverse.",
   "main": "index.js",
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "keywords": [
     "web3",
     "metaverse",
-    "pi network"
+    "pi network",
+    "express",
+    "mongodb"
   ],
   "author": "Ze0ro99",
   "license": "MIT",
   "dependencies": {
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0",
-    "react-router-dom": "^6.0.0",
-    "axios": "^1.7.9"
+    "express": "^4.18.2",
+    "mongoose": "^8.0.0"
   },
   "devDependencies": {
-    "eslint": "^8.40.0",
-    "eslint-config-react-app": "^6.0.0"
+    "prettier": "^3.0.0",
+    "nodemon": "^3.0.0"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Ze0ro99/metaconnect.git"
+    "url": "https://github.com/Ze0ro99/PiMetaConnect.git"
   }
 }
