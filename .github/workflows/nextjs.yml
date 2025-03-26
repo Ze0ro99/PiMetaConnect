@@ -1,104 +1,78 @@
 # اسم العملية
-name: نشر موقع Next.js على GitHub Pages
+name: النشر على Vercel
 
 # متى يتم تشغيل العملية
 on:
-  # تشغيل العملية عند الدفع إلى الفرع الرئيسي (main)
   push:
-    branches: ["main"]
-
-  # تشغيل العملية يدويًا من صفحة Actions
-  workflow_dispatch:
-
-# تعيين أذونات GITHUB_TOKEN للنشر على GitHub Pages
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-# السماح بتنفيذ عملية نشر واحدة فقط في نفس الوقت
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+    branches:
+      - main
+      - Ze0ro99-patch-1
+  pull_request:
+    branches:
+      - main
+      - Ze0ro99-patch-1
 
 # المهام
 jobs:
-  # مهمة البناء
-  build:
+  deploy:
     # تشغيل المهمة على نظام Ubuntu الأحدث
     runs-on: ubuntu-latest
+
+    # الخطوات
     steps:
-      # سحب الكود
+      # سحب الكود من المستودع
       - name: سحب الكود
         uses: actions/checkout@v4
-
-      # اكتشاف مدير الحزم
-      - name: اكتشاف مدير الحزم
-        id: detect-package-manager
-        run: |
-          if [ -f "${{ github.workspace }}/yarn.lock" ]; then
-            echo "manager=yarn" >> $GITHUB_OUTPUT
-            echo "command=install" >> $GITHUB_OUTPUT
-            echo "runner=yarn" >> $GITHUB_OUTPUT
-          elif [ -f "${{ github.workspace }}/package.json" ]; then
-            echo "manager=npm" >> $GITHUB_OUTPUT
-            echo "command=ci" >> $GITHUB_OUTPUT
-            echo "runner=npx --no-install" >> $GITHUB_OUTPUT
-          else
-            echo "غير قادر على تحديد مدير الحزم"
-            exit 1
-          fi
+        with:
+          fetch-depth: 0
 
       # إعداد Node.js
       - name: إعداد Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"  # استخدام Node.js الإصدار 20
-          cache: ${{ steps.detect-package-manager.outputs.manager }}
+          node-version: '20'
+          cache: 'npm'
 
-      # تهيئة GitHub Pages
-      - name: تهيئة GitHub Pages
-        uses: actions/configure-pages@v5
-        with:
-          static_site_generator: next  # تهيئة Next.js تلقائيًا
-
-      # استعادة ذاكرة التخزين المؤقت للبناء
-      - name: استعادة ذاكرة التخزين المؤقت للبناء
-        uses: actions/cache@v4
-        with:
-          path: |
-            .next/cache
-            node_modules
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json', '**/yarn.lock') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
-          restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json', '**/yarn.lock') }}-
-
-      # تثبيت التبعيات
+      # تثبيت التبعيات باستخدام npm
       - name: تثبيت التبعيات
-        run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "package-lock.json غير موجود. إنشاء واحد جديد..."
+            npm install --package-lock-only
+          fi
+          npm ci
 
-      # البناء باستخدام Next.js
-      - name: البناء باستخدام Next.js
-        run: ${{ steps.detect-package-manager.outputs.runner }} next build
+      # إنشاء ملف validation-key.txt في المجلد public
+      - name: إنشاء ملف validation-key.txt
+        run: |
+          mkdir -p public
+          echo "5d8bc63cfa473df9a90c3308432e255c892f4b363143dfd8fa98c6c44d1b0bda13b78ce5a9c195b1648220c33a7b4f026b8176c0a0c87ba421c309533a57480c" > public/validation-key.txt
+          echo "تم إنشاء ملف validation-key.txt"
 
-      # رفع الملفات الناتجة
-      - name: رفع الملفات الناتجة
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./out
+      # إنشاء ملف vercel.json
+      - name: إنشاء ملف vercel.json
+        run: |
+          echo '{"version": 2, "builds": [{"src": "index.js", "use": "@vercel/node"}], "routes": [{"src": "/validation-key.txt", "dest": "/public/validation-key.txt"}, {"src": "/(.*)", "dest": "index.js"}]}' > vercel.json
+          echo "تم إنشاء vercel.json"
 
-  # مهمة النشر
-  deploy:
-    # إعداد البيئة
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    # تشغيل المهمة على نظام Ubuntu الأحدث
-    runs-on: ubuntu-latest
-    # تعتمد على مهمة البناء
-    needs: build
-    steps:
-      # النشر على GitHub Pages
-      - name: النشر على GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      # إعداد متغير بيئي لـ MongoDB
+      - name: إعداد متغير بيئي لـ MongoDB
+        run: |
+          echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> $GITHUB_ENV
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+
+      # التحقق من تشغيل الخادم
+      - name: التحقق من تشغيل الخادم
+        run: |
+          npm start &
+          sleep 5
+          curl http://localhost:3000
+          echo "تم التحقق من تشغيل الخادم بنجاح!"
+
+      # النشر على Vercel
+      - name: النشر على Vercel
+        run: npx vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
