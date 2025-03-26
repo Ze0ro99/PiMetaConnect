@@ -1,52 +1,110 @@
-name: Static Site CI
+# اسم العملية
+name: النشر على Vercel
 
+# متى يتم تشغيل العملية
 on:
   push:
-    branches:
-      - main  # الفرع الرئيسي للمشروع
+    branches: [ "main", "Ze0ro99-patch-1" ]
   pull_request:
-    branches:
-      - main  # الفرع المستهدف لـ Pull Requests
+    branches: [ "main", "Ze0ro99-patch-1" ]
 
+# المهام
 jobs:
-  build:
+  deploy:
+    # تشغيل المهمة على نظام Ubuntu الأحدث
     runs-on: ubuntu-latest
 
+    # الخطوات
     steps:
-      # 1. التحقق من المستودع
-      - name: Check out code
+      # سحب الكود من المستودع
+      - name: سحب الكود
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # جلب كامل التاريخ لضمان عملية النشر
+          fetch-depth: 0
 
-      # 2. إعداد Node.js
-      - name: Set up Node.js
+      # إعداد Node.js
+      - name: إعداد Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'  # إصدار Node.js المطابق للمشروع
-          cache: 'npm'  # تسريع التثبيت باستخدام الذاكرة المؤقتة
+          node-version: '20'
+          cache: 'npm'
 
-      # 3. التحقق من وجود package-lock.json وتثبيت التبعيات
-      - name: Install dependencies
+      # التحقق من وجود express في package.json وتثبيت التبعيات
+      - name: التحقق من وجود express وتثبيت التبعيات
         run: |
+          if ! grep -q '"express"' package.json; then
+            echo "express غير موجود في package.json، يتم إضافته الآن..."
+            npm install express --save
+          fi
           if [ ! -f package-lock.json ]; then
             echo "package-lock.json غير موجود. إنشاء واحد جديد..."
             npm install --package-lock-only
           fi
-          npm ci  # تثبيت التبعيات بناءً على package-lock.json
+          npm ci
+          echo "تم تثبيت التبعيات بنجاح!"
 
-      # 4. بناء المشروع
-      - name: Build
-        run: npm run build
+      # التحقق من تثبيت express
+      - name: التحقق من تثبيت express
+        run: |
+          if [ ! -d node_modules/express ]; then
+            echo "خطأ: express لم يتم تثبيته بشكل صحيح"
+            exit 1
+          fi
+          echo "express تم تثبيته بنجاح!"
+
+      # إنشاء ملف validation-key.txt في المجلد public
+      - name: إنشاء ملف validation-key.txt
+        run: |
+          mkdir -p public
+          echo "5d8bc63cfa473df9a90c3308432e255c892f4b363143dfd8fa98c6c44d1b0bda13b78ce5a9c195b1648220c33a7b4f026b8176c0a0c87ba421c309533a57480c" > public/validation-key.txt
+          echo "تم إنشاء ملف validation-key.txt"
+
+      # إنشاء ملف vercel.json
+      - name: إنشاء ملف vercel.json
+        run: |
+          echo '{"version": 2, "builds": [{"src": "index.js", "use": "@vercel/node"}], "routes": [{"src": "/validation-key.txt", "dest": "/public/validation-key.txt"}, {"src": "/(.*)", "dest": "index.js"}]}' > vercel.json
+          echo "تم إنشاء vercel.json"
+
+      # إعداد متغير بيئي لـ MongoDB
+      - name: إعداد متغير بيئي لـ MongoDB
+        run: |
+          if [ -z "${{ secrets.MONGO_URI }}" ]; then
+            echo "خطأ: MONGO_URI غير موجود في الأسرار"
+            exit 1
+          fi
+          echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> $GITHUB_ENV
         env:
-          NODE_ENV: production  # ضمان البناء للإنتاج
+          MONGO_URI: ${{ secrets.MONGO_URI }}
 
-      # 5. النشر إلى GitHub Pages
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        if: github.ref == 'refs/heads/main'  # النشر فقط عند الدفع إلى main
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}  # رمز GitHub للمصادقة
-          publish_dir: ./build  # المجلد الذي يحتوي على الملفات المبنية
-          keep_files: false  # استبدال الملفات القديمة بدلاً من الاحتفاظ بها
-          commit_message: "Deploy to GitHub Pages - ${{ github.sha }}"  # رسالة الـ Commit
+      # التحقق من وجود أسرار Vercel
+      - name: التحقق من وجود أسرار Vercel
+        run: |
+          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
+            echo "خطأ: VERCEL_TOKEN غير موجود في الأسرار"
+            exit 1
+          fi
+          if [ -z "${{ secrets.VERCEL_ORG_ID }}" ]; then
+            echo "خطأ: VERCEL_ORG_ID غير موجود في الأسرار"
+            exit 1
+          fi
+          if [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
+            echo "خطأ: VERCEL_PROJECT_ID غير موجود في الأسرار"
+            exit 1
+          fi
+          echo "تم التحقق من وجود جميع أسرار Vercel بنجاح!"
+
+      # التحقق من تشغيل الخادم
+      - name: التحقق من تشغيل الخادم
+        run: |
+          npm start &
+          sleep 5
+          curl http://localhost:3000
+          echo "تم التحقق من تشغيل الخادم بنجاح!"
+          pkill -f "node.*index.js" || true
+
+      # النشر على Vercel
+      - name: النشر على Vercel
+        run: npx vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
