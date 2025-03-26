@@ -33,6 +33,12 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      # إزالة التبعيات غير الضرورية من package.json
+      - name: إزالة التبعيات غير الضرورية
+        run: |
+          npm uninstall eslint eslint-config-react-app eslint-plugin-react @typescript-eslint/parser @typescript-eslint/eslint-plugin --save-dev || true
+          echo "تم إزالة التبعيات غير الضرورية بنجاح!"
+
       # تحديث التبعيات تلقائيًا
       - name: تحديث التبعيات تلقائيًا
         run: |
@@ -41,8 +47,8 @@ jobs:
           npm install
           echo "تم تحديث التبعيات بنجاح!"
 
-      # التحقق من وجود express وتثبيت التبعيات
-      - name: التحقق من وجود express وتثبيت التبعيات
+      # التحقق من وجود express و mongoose وتثبيت التبعيات
+      - name: التحقق من وجود express و mongoose وتثبيت التبعيات
         run: |
           if ! grep -q '"express"' package.json; then
             echo "express غير موجود في package.json، يتم إضافته الآن..."
@@ -51,6 +57,10 @@ jobs:
           if ! grep -q '"mongoose"' package.json; then
             echo "mongoose غير موجود في package.json، يتم إضافته الآن..."
             npm install mongoose --save
+          fi
+          if ! grep -q '"prettier"' package.json; then
+            echo "prettier غير موجود في package.json، يتم إضافته الآن..."
+            npm install prettier --save-dev
           fi
           if [ ! -f package-lock.json ]; then
             echo "package-lock.json غير موجود. إنشاء واحد جديد..."
@@ -72,12 +82,6 @@ jobs:
           fi
           echo "express و mongoose تم تثبيتهما بنجاح!"
 
-      # تثبيت Prettier
-      - name: تثبيت Prettier
-        run: |
-          npm install --save-dev prettier
-          echo "تم تثبيت Prettier بنجاح!"
-
       # إنشاء ملف تكوين Prettier
       - name: إنشاء ملف تكوين Prettier
         run: |
@@ -94,7 +98,7 @@ jobs:
             echo "لا توجد ملفات JavaScript للتحقق منها. يتم تخطي الخطوة..."
           fi
 
-      # رفع التغييرات بعد تحديث التبعيات وتصحيح التنسيق
+      # رفع التغييرات بعد التحديث وتصحيح التنسيق
       - name: رفع التغييرات بعد التحديث وتصحيح التنسيق
         run: |
           git config --global user.name "GitHub Actions"
@@ -166,3 +170,10 @@ jobs:
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      # التحقق من الرابط بعد النشر
+      - name: التحقق من الرابط بعد النشر
+        run: |
+          curl -f https://meta-connect-kiawcb5bh-ze0ro99s-projects.vercel.app || { echo "خطأ: الرابط لا يعمل"; exit 1; }
+          curl -f https://meta-connect-kiawcb5bh-ze0ro99s-projects.vercel.app/validation-key.txt || { echo "خطأ: ملف validation-key.txt غير متاح"; exit 1; }
+          echo "الرابط يعمل بنجاح!"
