@@ -1,57 +1,22 @@
 #!/bin/bash
 
-# تعيين المتغيرات الأساسية
+# تعيين المتغيرات
 PROJECT_DIR="PiMetaConnect"
 GITHUB_REPO="https://github.com/Ze0ro99/PiMetaConnect.git"
 BRANCH="Ze0ro99-patch-1"
-MONGO_URI="mongodb://localhost:27017/pimetaconnect" # استبدلها برابط MongoDB الخاص بك
+MONGO_URI="mongodb+srv://Ze0ro99:<db_password>@cluster0.rinh3.mongodb.net/pimetaconnect?retryWrites=true&w=majority&appName=Cluster0" # استبدل <db_password>
+VALIDATION_KEY="5d8bc63cfa473df9a90c3308432e255c892f4b363143dfd8fa98c6c44d1b0bda13b78ce5a9c195b1648220c33a7b4f026b8176c0a0c87ba421c309533a57480c"
 
-# التحقق من وجود git و npm
+# التحقق من الأدوات المطلوبة
 command -v git >/dev/null 2>&1 || { echo "Git غير مثبت. قم بتثبيته أولاً."; exit 1; }
 command -v npm >/dev/null 2>&1 || { echo "Node.js/npm غير مثبت. قم بتثبيته أولاً."; exit 1; }
 command -v vercel >/dev/null 2>&1 || { echo "Vercel CLI غير مثبت. تثبيته باستخدام: npm i -g vercel"; exit 1; }
 
-# إنشاء المجلد واستنساخ المستودع إذا لم يكن موجودًا
-if [ ! -d "$PROJECT_DIR" ]; then
-    echo "استنساخ المستودع..."
-    git clone -b "$BRANCH" "$GITHUB_REPO" "$PROJECT_DIR"
-    cd "$PROJECT_DIR"
-else
-    echo "المجلد موجود بالفعل. الانتقال إليه..."
-    cd "$PROJECT_DIR"
-    git pull origin "$BRANCH"
-fi
-
-# إنشاء ملف index.js
-echo "إنشاء ملف index.js..."
-cat > index.js << 'EOL'
-const express = require('express');
-const mongoose = require('mongoose');
-const app = express();
-
-app.use(express.json());
-
-// الاتصال بـ MongoDB
-mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-}).then(() => {
-    console.log('تم الاتصال بقاعدة البيانات');
-}).catch(err => {
-    console.error('خطأ في الاتصال:', err);
-});
-
-// مسار اختباري
-app.get('/', (req, res) => {
-    res.send('PiMetaConnect يعمل بنجاح!');
-});
-
-// تشغيل الخادم
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-    console.log(`الخادم يعمل على المنفذ ${port}`);
-});
-EOL
+# إعادة تهيئة المشروع
+echo "إعادة تهيئة المشروع..."
+rm -rf "$PROJECT_DIR"
+git clone -b "$BRANCH" "$GITHUB_REPO" "$PROJECT_DIR"
+cd "$PROJECT_DIR"
 
 # إنشاء ملف package.json
 echo "إنشاء ملف package.json..."
@@ -79,6 +44,54 @@ cat > package.json << 'EOL'
 }
 EOL
 
+# إنشاء ملف index.js
+echo "إنشاء ملف index.js..."
+cat > index.js << EOL
+const express = require('express');
+const mongoose = require('mongoose');
+const app = express();
+
+// رابط الاتصال بـ MongoDB
+const uri = process.env.MONGO_URI || "$MONGO_URI";
+const clientOptions = { serverApi: { version: '1', strict: true, deprecationErrors: true } };
+
+// Middleware لتحليل طلبات JSON
+app.use(express.json());
+
+// الاتصال بـ MongoDB
+async function connectToMongoDB() {
+    try {
+        await mongoose.connect(uri, clientOptions);
+        await mongoose.connection.db.admin().command({ ping: 1 });
+        console.log("تم اختبار النشر. لقد نجحت في الاتصال بـ MongoDB!");
+    } catch (error) {
+        console.error("فشل الاتصال بـ MongoDB:", error);
+        process.exit(1);
+    }
+}
+
+// تشغيل الاتصال
+connectToMongoDB();
+
+// مسار اختباري
+app.get('/', (req, res) => {
+    res.send('PiMetaConnect يعمل بنجاح مع MongoDB!');
+});
+
+// تشغيل الخادم
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+    console.log(\`الخادم يعمل على المنفذ \${port}\`);
+});
+
+// التعامل مع إغلاق الخادم
+process.on('SIGINT', async () => {
+    await mongoose.disconnect();
+    console.log('تم قطع الاتصال بـ MongoDB بنجاح.');
+    process.exit(0);
+});
+EOL
+
 # إنشاء ملف vercel.json
 echo "إنشاء ملف vercel.json..."
 cat > vercel.json << 'EOL'
@@ -92,27 +105,15 @@ cat > vercel.json << 'EOL'
   ],
   "routes": [
     {
+      "src": "/validation-key.txt",
+      "dest": "/public/validation-key.txt"
+    },
+    {
       "src": "/(.*)",
       "dest": "index.js"
     }
   ]
 }
-EOL
+...
 
-# تثبيت التبعيات
-echo "تثبيت التبعيات..."
-npm install
-
-# إعداد Git ورفع التغييرات
-echo "إعداد Git ورفع التغييرات..."
-git add .
-git commit -m "إعداد السكربت الموحد وإصلاح مشكلة Vercel"
-git push origin "$BRANCH"
-
-# نشر المشروع على Vercel
-echo "نشر المشروع على Vercel..."
-vercel env add MONGO_URI "$MONGO_URI" production
-vercel --prod
-
-echo "اكتمل الإعداد! المشروع جاهز للاستخدام."
-echo "رابط النشر سيظهر في السجل أعلاه. قم بزيارته للتأكد من عمل التطبيق."
+حدث خطأ ما، يُرجى إعادة المحاولة.
