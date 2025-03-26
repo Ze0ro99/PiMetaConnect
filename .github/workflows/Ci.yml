@@ -19,6 +19,8 @@ jobs:
       # سحب الكود من المستودع
       - name: سحب الكود
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # إعداد Node.js
       - name: إعداد Node.js
@@ -49,17 +51,34 @@ jobs:
           echo '{"version": 2, "builds": [{"src": "index.js", "use": "@vercel/node"}], "routes": [{"src": "/validation-key.txt", "dest": "/public/validation-key.txt"}, {"src": "/(.*)", "dest": "index.js"}]}' > vercel.json
           echo "تم إنشاء vercel.json"
 
+      # إعداد متغير بيئي لـ MongoDB
+      - name: إعداد متغير بيئي لـ MongoDB
+        run: |
+          if [ -z "${{ secrets.MONGO_URI }}" ]; then
+            echo "خطأ: MONGO_URI غير موجود في الأسرار"
+            exit 1
+          fi
+          echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> $GITHUB_ENV
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+
+      # التحقق من وجود أسرار Vercel
+      - name: التحقق من وجود أسرار Vercel
+        run: |
+          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
+            echo "خطأ: VERCEL_TOKEN غير موجود في الأسرار"
+            exit 1
+          fi
+          if [ -z "${{ secrets.VERCEL_ORG_ID }}" ]; then
+            echo "خطأ: VERCEL_ORG_ID غير موجود في الأسرار"
+            exit 1
+          fi
+          if [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
+            echo "خطأ: VERCEL_PROJECT_ID غير موجود في الأسرار"
+            exit 1
+          fi
+          echo "تم التحقق من وجود جميع أسرار Vercel بنجاح!"
+
       # التحقق من تشغيل الخادم
       - name: التحقق من تشغيل الخادم
-        run: |
-          npm start &
-          sleep 5
-          curl http://localhost:3000
-          echo "تم التحقق من تشغيل الخادم بنجاح!"
-
-      # النشر على Vercel
-      - name: النشر على Vercel
-        run: npx vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run
