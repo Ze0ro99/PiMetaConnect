@@ -1,7 +1,7 @@
 # اسم العملية
 name: التكامل المستمر والنشر والتحديث التلقائي
 
-# متى يتم تشغيل العملية
+# متى يتم التشغيل
 on:
   push:
     branches: [ "main", "Ze0ro99-patch-1" ]
@@ -33,11 +33,32 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      # إزالة التبعيات غير الضرورية من package.json
-      - name: إزالة التبعيات غير الضرورية
+      # التحقق من وجود ملفات JavaScript
+      - name: التحقق من وجود ملفات JavaScript
         run: |
-          npm uninstall eslint eslint-config-react-app eslint-plugin-react @typescript-eslint/parser @typescript-eslint/eslint-plugin --save-dev || true
-          echo "تم إزالة التبعيات غير الضرورية بنجاح!"
+          if ! ls *.js >/dev/null 2>&1; then
+            echo "لا توجد ملفات JavaScript للتحقق منها. يتم تخطي الخطوة..."
+            exit 0
+          fi
+          echo "تم العثور على ملفات JavaScript، يتم المتابعة..."
+
+      # تثبيت Prettier
+      - name: تثبيت Prettier
+        run: |
+          npm install --save-dev prettier
+          echo "تم تثبيت Prettier بنجاح!"
+
+      # إنشاء ملف تكوين Prettier
+      - name: إنشاء ملف تكوين Prettier
+        run: |
+          echo '{"semi": true, "trailingComma": "es5", "singleQuote": true, "printWidth": 80}' > .prettierrc
+          echo "تم إنشاء ملف .prettierrc بنجاح!"
+
+      # تشغيل Prettier لتصحيح التنسيق
+      - name: تشغيل Prettier لتصحيح التنسيق
+        run: |
+          npx prettier --write "*.js"
+          echo "تم تصحيح تنسيق ملفات JavaScript بنجاح!"
 
       # تحديث التبعيات تلقائيًا
       - name: تحديث التبعيات تلقائيًا
@@ -58,10 +79,6 @@ jobs:
             echo "mongoose غير موجود في package.json، يتم إضافته الآن..."
             npm install mongoose --save
           fi
-          if ! grep -q '"prettier"' package.json; then
-            echo "prettier غير موجود في package.json، يتم إضافته الآن..."
-            npm install prettier --save-dev
-          fi
           if [ ! -f package-lock.json ]; then
             echo "package-lock.json غير موجود. إنشاء واحد جديد..."
             npm install --package-lock-only
@@ -81,22 +98,6 @@ jobs:
             exit 1
           fi
           echo "express و mongoose تم تثبيتهما بنجاح!"
-
-      # إنشاء ملف تكوين Prettier
-      - name: إنشاء ملف تكوين Prettier
-        run: |
-          echo '{"semi": true, "trailingComma": "es5", "singleQuote": true, "printWidth": 80}' > .prettierrc
-          echo "تم إنشاء ملف .prettierrc بنجاح!"
-
-      # تشغيل Prettier لتصحيح التنسيق
-      - name: تشغيل Prettier لتصحيح التنسيق
-        run: |
-          if ls *.js >/dev/null 2>&1; then
-            npx prettier --write "*.js"
-            echo "تم تصحيح تنسيق ملفات JavaScript بنجاح!"
-          else
-            echo "لا توجد ملفات JavaScript للتحقق منها. يتم تخطي الخطوة..."
-          fi
 
       # رفع التغييرات بعد التحديث وتصحيح التنسيق
       - name: رفع التغييرات بعد التحديث وتصحيح التنسيق
