@@ -7,9 +7,10 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // إعدادات الخادم
-app.use(cors()); // السماح بطلبات Cross-Origin
-app.use(express.json()); // لتحليل طلبات JSON
-app.use(express.static(path.join(__dirname, 'client/build'))); // خدمة ملفات React
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'client/build')));
+app.use('/public', express.static(path.join(__dirname, 'public'))); // خدمة ملفات public
 
 // الاتصال بـ MongoDB
 const mongoUri = process.env.MONGO_URI;
