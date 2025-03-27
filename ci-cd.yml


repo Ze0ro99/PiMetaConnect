@@ -161,7 +161,7 @@ jobs:
         run: |
           npm start &
           sleep 5
-          curl http://localhost:3000
+          curl http://localhost:3000 || { echo "خطأ: الخادم لا يعمل"; exit 1; }
           echo "تم التحقق من تشغيل الخادم بنجاح!"
           pkill -f "node.*index.js" || true
 
