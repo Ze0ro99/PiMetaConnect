@@ -1,24 +1,95 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const path = require('path');
+const cors = require('cors');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// الاتصال بـ MongoDB باستخدام متغير البيئة MONGO_URI
-const mongoUri = process.env.MONGO_URI;
+// إعدادات الخادم
+app.use(cors()); // السماح بطلبات Cross-Origin
+app.use(express.json()); // لتحليل طلبات JSON
+app.use(express.static(path.join(__dirname, 'client/build'))); // خدمة ملفات React
 
+// الاتصال بـ MongoDB
+const mongoUri = process.env.MONGO_URI;
 mongoose.connect(mongoUri, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => {
-    console.log('تم الاتصال بـ MongoDB بنجاح!');
-  })
+  .then(() => console.log('تم الاتصال بـ MongoDB بنجاح!'))
   .catch((err) => {
     console.error('خطأ في الاتصال بـ MongoDB:', err.message);
     process.exit(1);
   });
 
-// مسار رئيسي للتأكد من أن الخادم يعمل
-app.get('/', (req, res) => {
-  res.send('PiMetaConnect يعمل بنجاح مع MongoDB!');
+// نموذج المستخدم
+const userSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  createdAt: { type: Date, default: Date.now },
+});
+const User = mongoose.model('User', userSchema);
+
+// نموذج الدفعة
+const paymentSchema = new mongoose.Schema({
+  paymentId: { type: String, required: true, unique: true },
+  txid: { type: String },
+  amount: { type: Number, required: true },
+  memo: { type: String },
+  metadata: { type: Object },
+  status: { type: String, default: 'pending' },
+  createdAt: { type: Date, default: Date.now },
+});
+const Payment = mongoose.model('Payment', paymentSchema);
+
+// نقطة نهاية لتسجيل المستخدم
+app.post('/api/users', async (req, res) => {
+  try {
+    const { username } = req.body;
+    const user = new User({ username });
+    await user.save();
+    res.status(201).json({ message: 'تم تسجيل المستخدم بنجاح', user });
+  } catch (error) {
+    if (error.code === 11000) {
+      res.status(400).json({ message: 'المستخدم موجود بالفعل' });
+    } else {
+      res.status(500).json({ message: 'خطأ في تسجيل المستخدم', error });
+    }
+  }
+});
+
+// نقطة نهاية للموافقة على الدفعة
+app.post('/api/payments/approve', async (req, res) => {
+  try {
+    const { paymentId } = req.body;
+    const payment = new Payment({
+      paymentId,
+      amount: 1,
+      memo: 'دفعة تجريبية لـ PiMetaConnect',
+      metadata: { orderId: '12345' },
+    });
+    await payment.save();
+    res.status(200).json({ message: 'تمت الموافقة على الدفعة' });
+  } catch (error) {
+    res.status(500).json({ message: 'خطأ في الموافقة على الدفعة', error });
+  }
+});
+
+// نقطة نهاية لإكمال الدفعة
+app.post('/api/payments/complete', async (req, res) => {
+  try {
+    const { paymentId, txid } = req.body;
+    const payment = await Payment.findOneAndUpdate(
+      { paymentId },
+      { txid, status: 'completed' },
+      { new: true }
+    );
+    res.status(200).json({ message: 'تم إكمال الدفعة بنجاح', payment });
+  } catch (error) {
+    res.status(500).json({ message: 'خطأ في إكمال الدفعة', error });
+  }
+});
+
+// مسار افتراضي لخدمة تطبيق React
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
 });
 
 // تشغيل الخادم
