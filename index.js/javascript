@@ -1,23 +1,27 @@
-require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const { initiatePayment } = require('./piPayments');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
-const MONGODB_URI = process.env.MONGODB_URI;
+const port = process.env.PORT || 3000;
 
-mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('Database connected'))
-  .catch((err) => console.error('Database connection error:', err));
+// الاتصال بـ MongoDB باستخدام متغير البيئة MONGO_URI
+const mongoUri = process.env.MONGO_URI;
 
-app.post('/api/pay', async (req, res) => {
-  try {
-    const payment = await initiatePayment(10, 'Test Payment');
-    res.status(200).json(payment);
-  } catch (error) {
-    res.status(500).json({ error: 'Payment failed' });
-  }
+mongoose.connect(mongoUri, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    console.log('تم الاتصال بـ MongoDB بنجاح!');
+  })
+  .catch((err) => {
+    console.error('خطأ في الاتصال بـ MongoDB:', err.message);
+    process.exit(1);
+  });
+
+// مسار رئيسي للتأكد من أن الخادم يعمل
+app.get('/', (req, res) => {
+  res.send('PiMetaConnect يعمل بنجاح مع MongoDB!');
 });
 
-app.listen(PORT, () => console.log(`Backend running on http://localhost:${PORT}`));
+// تشغيل الخادم
+app.listen(port, () => {
+  console.log(`الخادم يعمل على المنفذ ${port}`);
+});
