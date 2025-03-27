@@ -1,0 +1,15 @@
+import React from 'react';
+import PiLoginButton from './components/PiLoginButton';
+import PiPaymentButton from './components/PiPaymentButton';
+
+function App() {
+  return (
+    <div className="App" style={{ textAlign: 'center', padding: '50px' }}>
+      <h1>مرحبًا بك في PiMetaConnect</h1>
+      <PiLoginButton />
+      <PiPaymentButton />
+    </div>
+  );
+}
+
+export default App;
