@@ -1,0 +1,53 @@
+import React from 'react';
+import { Pi } from '@pihq/pi-web-sdk';
+
+const pi = Pi.init({ version: '2.0', sandbox: false });
+
+export default function PiLoginButton() {
+  const handleLogin = async () => {
+    try {
+      const auth = await pi.authenticate(['username'], onIncompletePaymentFound);
+      const username = auth.user.username;
+
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username }),
+      });
+
+      if (response.ok) {
+        alert(`مرحبًا، ${username}! تم تسجيل دخولك بنجاح.`);
+      } else {
+        alert('فشل في تسجيل بيانات المستخدم.');
+      }
+    } catch (error) {
+      console.error('فشل في تسجيل الدخول:', error);
+      alert('فشل في تسجيل الدخول. تحقق من الاتصال بـ Pi Network.');
+    }
+  };
+
+  function onIncompletePaymentFound(payment) {
+    console.log('Incomplete payment found:', payment);
+    return { approved: false, message: 'Payment not approved' };
+  }
+
+  return (
+    <button
+      onClick={handleLogin}
+      style={{
+        padding: '10px 20px',
+        fontSize: '16px',
+        backgroundColor: '#4CAF50',
+        color: 'white',
+        border: 'none',
+        borderRadius: '5px',
+        cursor: 'pointer',
+        margin: '10px',
+      }}
+    >
+      تسجيل الدخول باستخدام Pi
+    </button>
+  );
+}
