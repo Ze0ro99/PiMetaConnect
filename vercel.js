@@ -2,17 +2,30 @@
   "version": 2,
   "builds": [
     {
-      "src": "server.js",
+      "src": "index.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
+      "src": "/validation-key.txt",
+      "dest": "/public/validation-key.txt"
+    },
+    {
+      "src": "/privacy-policy",
+      "dest": "/public/privacy-policy.html"
+    },
+    {
+      "src": "/terms-of-service",
+      "dest": "/public/terms-of-service.html"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "index.js"
+    },
+    {
       "src": "/(.*)",
-      "dest": "server.js"
+      "dest": "client/build/index.html"
     }
-  ],
-  "env": {
-    "MONGODB_URI": "your_mongodb_connection_string_here"
-  }
+  ]
 }
