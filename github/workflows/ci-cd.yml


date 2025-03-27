@@ -30,6 +30,14 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      # إزالة ملفات قفل التبعيات غير الضرورية
+      - name: إزالة ملفات قفل التبعيات غير الضرورية
+        run: |
+          rm -f yarn.lock npm-shrinkwrap.json
+          cd client
+          rm -f yarn.lock npm-shrinkwrap.json
+          echo "تم إزالة ملفات yarn.lock و npm-shrinkwrap.json بنجاح!"
+
       # تحديث التبعيات تلقائيًا للخادم
       - name: تحديث التبعيات تلقائيًا للخادم
         run: |
@@ -55,6 +63,13 @@ jobs:
           npm install
           echo "تم تحديث تبعيات تطبيق React بنجاح!"
 
+      # تهيئة ملفات YAML باستخدام Prettier
+      - name: تهيئة ملفات YAML باستخدام Prettier
+        run: |
+          npm install prettier --save-dev
+          npx prettier --write "**/*.yml"
+          echo "تم تهيئة ملفات YAML بنجاح!"
+
       # تشغيل Prettier لتهيئة الكود
       - name: تشغيل Prettier لتهيئة الكود
         run: |
@@ -71,7 +86,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "لا توجد تغييرات لرفعها"
           else
-            git commit -m "تهيئة الكود باستخدام Prettier بواسطة GitHub Actions"
+            git commit -m "تهيئة الكود وملفات YAML باستخدام Prettier بواسطة GitHub Actions"
             git push
             echo "تم رفع التغييرات بنجاح!"
           fi
