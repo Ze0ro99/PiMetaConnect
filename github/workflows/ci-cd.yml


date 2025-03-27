@@ -1,0 +1,144 @@
+# اسم العملية
+name: التكامل المستمر والنشر والتحديث التلقائي
+
+# متى يتم التشغيل
+on:
+  push:
+    branches: [ "main", "Ze0ro99-patch-1" ]
+  pull_request:
+    branches: [ "main", "Ze0ro99-patch-1" ]
+  schedule:
+    - cron: '0 0 * * 0' # كل يوم أحد الساعة 00:00 UTC
+
+# المهام
+jobs:
+  ci-cd:
+    runs-on: ubuntu-latest
+
+    steps:
+      # سحب الكود
+      - name: سحب الكود
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # إعداد Node.js
+      - name: إعداد Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # تحديث التبعيات تلقائيًا للخادم
+      - name: تحديث التبعيات تلقائيًا للخادم
+        run: |
+          npm install -g npm-check-updates
+          ncu -u
+          npm install
+          echo "تم تحديث التبعيات بنجاح!"
+
+      # تثبيت تبعيات الخادم
+      - name: تثبيت تبعيات الخادم
+        run: npm install
+
+      # تثبيت تبعيات تطبيق React
+      - name: تثبيت تبعيات تطبيق React
+        run: cd client && npm install
+
+      # تحديث التبعيات تلقائيًا لتطبيق React
+      - name: تحديث التبعيات تلقائيًا لتطبيق React
+        run: |
+          cd client
+          npm install -g npm-check-updates
+          ncu -u
+          npm install
+          echo "تم تحديث تبعيات تطبيق React بنجاح!"
+
+      # بناء تطبيق React
+      - name: بناء تطبيق React
+        run: cd client && npm run build
+
+      # التحقق من وجود express و mongoose
+      - name: التحقق من وجود express و mongoose
+        run: |
+          if [ ! -d node_modules/express ]; then
+            echo "خطأ: express لم يتم تثبيته بشكل صحيح"
+            exit 1
+          fi
+          if [ ! -d node_modules/mongoose ]; then
+            echo "خطأ: mongoose لم يتم تثبيته بشكل صحيح"
+            exit 1
+          fi
+          echo "express و mongoose تم تثبيتهما بنجاح!"
+
+      # رفع التغييرات بعد التحديث
+      - name: رفع التغييرات بعد التحديث
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add .
+          if git diff --staged --quiet; then
+            echo "لا توجد تغييرات لرفعها"
+          else
+            git commit -m "تحديث التبعيات بواسطة GitHub Actions"
+            git push
+            echo "تم رفع التغييرات بنجاح!"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # إنشاء ملف validation-key.txt
+      - name: إنشاء ملف validation-key.txt
+        run: |
+          mkdir -p public
+          echo "5d8bc63cfa473df9a90c3308432e255c892f4b363143dfd8fa98c6c44d1b0bda13b78ce5a9c195b1648220c33a7b4f026b8176c0a0c87ba421c309533a57480c" > public/validation-key.txt
+          echo "تم إنشاء ملف validation-key.txt"
+
+      # إنشاء ملف vercel.json
+      - name: إنشاء ملف vercel.json
+        run: |
+          echo '{"version": 2, "builds": [{"src": "index.js", "use": "@vercel/node"}], "routes": [{"src": "/validation-key.txt", "dest": "/public/validation-key.txt"}, {"src": "/api/(.*)", "dest": "index.js"}, {"src": "/(.*)", "dest": "client/build/index.html"}]}' > vercel.json
+          echo "تم إنشاء vercel.json"
+
+      # إعداد متغير بيئي لـ MongoDB
+      - name: إعداد متغير بيئي لـ MongoDB
+        run: |
+          if [ -z "${{ secrets.MONGO_URI }}" ]; then
+            echo "خطأ: MONGO_URI غير موجود في الأسرار"
+            exit 1
+          fi
+          echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> $GITHUB_ENV
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+
+      # التحقق من وجود أسرار Vercel
+      - name: التحقق من وجود أسرار Vercel
+        run: |
+          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
+            echo "خطأ: VERCEL_TOKEN غير موجود في الأسرار"
+            exit 1
+          fi
+          if [ -z "${{ secrets.VERCEL_ORG_ID }}" ]; then
+            echo "خطأ: VERCEL_ORG_ID غير موجود في الأسرار"
+            exit 1
+          fi
+          if [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
+            echo "خطأ: VERCEL_PROJECT_ID غير موجود في الأسرار"
+            exit 1
+          fi
+          echo "تم التحقق من وجود جميع أسرار Vercel بنجاح!"
+
+      # النشر على Vercel
+      - name: النشر على Vercel
+        run: npx vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      # التحقق من الرابط بعد النشر
+      - name: التحقق من الرابط بعد النشر
+        run: |
+          curl -f https://pi-meta-connect.vercel.app || { echo "خطأ: الرابط لا يعمل"; exit 1; }
+          curl -f https://pi-meta-connect.vercel.app/validation-key.txt || { echo "خطأ: ملف validation-key.txt غير متاح"; exit 1; }
+          echo "الرابط يعمل بنجاح!"
