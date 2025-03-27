@@ -1,0 +1,23 @@
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<script>
+  Pi.init({ version: "2.0" });
+
+  // مصادقة المستخدم
+  async function authenticate() {
+    try {
+      const user = await Pi.authenticate(['username'], onIncompletePaymentFound);
+      document.getElementById('message').innerText = `مرحبًا ${user.username}! PiMetaConnect يعمل بنجاح مع MongoDB!`;
+    } catch (error) {
+      document.getElementById('message').innerText = 'فشل في المصادقة مع Pi Network';
+      console.error('Authentication error:', error);
+    }
+  }
+
+  function onIncompletePaymentFound(payment) {
+    console.log('Incomplete payment found:', payment);
+    return { approved: false, message: 'Payment not approved' };
+  }
+
+  // استدعاء المصادقة عند تحميل الصفحة
+  window.onload = authenticate;
+</script>
