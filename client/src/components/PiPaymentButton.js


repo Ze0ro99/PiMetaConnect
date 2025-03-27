@@ -1,0 +1,69 @@
+import React from 'react';
+import { Pi } from '@pihq/pi-web-sdk';
+
+const pi = Pi.init({ version: '2.0', sandbox: false });
+
+export default function PiPaymentButton() {
+  const handlePayment = async () => {
+    try {
+      const paymentData = {
+        amount: 1,
+        memo: 'دفعة تجريبية لـ PiMetaConnect',
+        metadata: { orderId: '12345' },
+      };
+
+      const payment = await pi.createPayment(paymentData, {
+        onReadyForServerApproval: (paymentId) => {
+          console.log('Payment ready for server approval:', paymentId);
+          fetch('/api/payments/approve', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ paymentId }),
+          });
+        },
+        onReadyForServerCompletion: (paymentId, txid) => {
+          console.log('Payment completed:', paymentId, txid);
+          fetch('/api/payments/complete', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ paymentId, txid }),
+          });
+        },
+        onCancel: () => {
+          alert('تم إلغاء الدفعة.');
+        },
+        onError: (error) => {
+          console.error('Payment error:', error);
+          alert('فشل في إتمام الدفعة.');
+        },
+      });
+
+      console.log('Payment initiated:', payment);
+    } catch (error) {
+      console.error('Payment failed:', error);
+      alert('فشل في بدء الدفعة. تحقق من الاتصال بـ Pi Network.');
+    }
+  };
+
+  return (
+    <button
+      onClick={handlePayment}
+      style={{
+        padding: '10px 20px',
+        fontSize: '16px',
+        backgroundColor: '#2196F3',
+        color: 'white',
+        border: 'none',
+        borderRadius: '5px',
+        cursor: 'pointer',
+        margin: '10px',
+      }}
+    >
+      دفع باستخدام Pi
+    </button>
+  );
+}
