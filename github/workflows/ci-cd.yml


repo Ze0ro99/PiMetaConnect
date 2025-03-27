@@ -4,33 +4,37 @@ name: التكامل المستمر والنشر والتحديث التلقائ
 # متى يتم التشغيل
 on:
   push:
-    branches: [ "main", "Ze0ro99-patch-1" ]
+    branches:
+      - main
+      - Ze0ro99-patch-1
   pull_request:
-    branches: [ "main", "Ze0ro99-patch-1" ]
+    branches:
+      - main
+      - Ze0ro99-patch-1
   schedule:
     - cron: '0 0 * * 0' # كل يوم أحد الساعة 00:00 UTC
 
 # المهام
 jobs:
-  ci-cd:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # سحب الكود
-      - name: سحب الكود
+      # 1. التحقق من المستودع
+      - name: رمز الخروج
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # جلب كامل التاريخ لاستمرارية النشر
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # إعداد Node.js
+      # 2. إعداد Node.js
       - name: إعداد Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: '20' # إصدار Node.js المطابق للمشروع
+          cache: 'npm' # تسريع التثبيت باستخدام الذاكرة المؤقتة
 
-      # إزالة ملفات قفل التبعيات غير الضرورية
+      # 3. إزالة ملفات قفل التبعيات غير الضرورية
       - name: إزالة ملفات قفل التبعيات غير الضرورية
         run: |
           rm -f yarn.lock npm-shrinkwrap.json
@@ -38,7 +42,30 @@ jobs:
           rm -f yarn.lock npm-shrinkwrap.json
           echo "تم إزالة ملفات yarn.lock و npm-shrinkwrap.json بنجاح!"
 
-      # تحديث التبعيات تلقائيًا للخادم
+      # 4. التحقق من وجود package-lock.json وتثبيت التبعيات للخادم
+      - name: تثبيت تبعيات الخادم
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "package-lock.json غير موجود. إنشاء واحد جديد..."
+            npm install --package-lock-only
+          fi
+          npm ci # تثبيت التبعيات بناءً على package-lock.json
+        env:
+          NODE_ENV: production
+
+      # 5. التحقق من وجود package-lock.json وتثبيت تبعيات تطبيق React
+      - name: تثبيت تبعيات تطبيق React
+        run: |
+          cd client
+          if [ ! -f package-lock.json ]; then
+            echo "package-lock.json غير موجود. إنشاء واحد جديد..."
+            npm install --package-lock-only
+          fi
+          npm ci # تثبيت التبعيات بناءً على package-lock.json
+        env:
+          NODE_ENV: production
+
+      # 6. تحديث التبعيات تلقائيًا للخادم
       - name: تحديث التبعيات تلقائيًا للخادم
         run: |
           npm install -g npm-check-updates
@@ -46,15 +73,7 @@ jobs:
           npm install
           echo "تم تحديث التبعيات بنجاح!"
 
-      # تثبيت تبعيات الخادم
-      - name: تثبيت تبعيات الخادم
-        run: npm install
-
-      # تثبيت تبعيات تطبيق React
-      - name: تثبيت تبعيات تطبيق React
-        run: cd client && npm install
-
-      # تحديث التبعيات تلقائيًا لتطبيق React
+      # 7. تحديث التبعيات تلقائيًا لتطبيق React
       - name: تحديث التبعيات تلقائيًا لتطبيق React
         run: |
           cd client
@@ -63,21 +82,21 @@ jobs:
           npm install
           echo "تم تحديث تبعيات تطبيق React بنجاح!"
 
-      # تهيئة ملفات YAML باستخدام Prettier
+      # 8. تهيئة ملفات YAML باستخدام Prettier
       - name: تهيئة ملفات YAML باستخدام Prettier
         run: |
           npm install prettier --save-dev
           npx prettier --write "**/*.yml"
           echo "تم تهيئة ملفات YAML بنجاح!"
 
-      # تشغيل Prettier لتهيئة الكود
+      # 9. تشغيل Prettier لتهيئة الكود
       - name: تشغيل Prettier لتهيئة الكود
         run: |
           cd client
           npx prettier --write "src/**/*.{js,jsx,ts,tsx}"
           echo "تم تهيئة الكود باستخدام Prettier بنجاح!"
 
-      # رفع التغييرات بعد تشغيل Prettier
+      # 10. رفع التغييرات بعد تشغيل Prettier
       - name: رفع التغييرات بعد تشغيل Prettier
         run: |
           git config --global user.name "GitHub Actions"
@@ -93,11 +112,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # بناء تطبيق React
+      # 11. بناء تطبيق React
       - name: بناء تطبيق React
-        run: cd client && npm run build
+        run: |
+          cd client
+          npm run build
+        env:
+          NODE_ENV: production
 
-      # التحقق من وجود express و mongoose
+      # 12. التحقق من وجود express و mongoose
       - name: التحقق من وجود express و mongoose
         run: |
           if [ ! -d node_modules/express ]; then
@@ -110,20 +133,20 @@ jobs:
           fi
           echo "express و mongoose تم تثبيتهما بنجاح!"
 
-      # إنشاء ملف validation-key.txt
+      # 13. إنشاء ملف validation-key.txt
       - name: إنشاء ملف validation-key.txt
         run: |
           mkdir -p public
           echo "5d8bc63cfa473df9a90c3308432e255c892f4b363143dfd8fa98c6c44d1b0bda13b78ce5a9c195b1648220c33a7b4f026b8176c0a0c87ba421c309533a57480c" > public/validation-key.txt
           echo "تم إنشاء ملف validation-key.txt"
 
-      # إنشاء ملف vercel.json
+      # 14. إنشاء ملف vercel.json
       - name: إنشاء ملف vercel.json
         run: |
           echo '{"version": 2, "builds": [{"src": "index.js", "use": "@vercel/node"}], "routes": [{"src": "/validation-key.txt", "dest": "/public/validation-key.txt"}, {"src": "/privacy-policy", "dest": "/public/privacy-policy.html"}, {"src": "/terms-of-service", "dest": "/public/terms-of-service.html"}, {"src": "/api/(.*)", "dest": "index.js"}, {"src": "/(.*)", "dest": "client/build/index.html"}]}' > vercel.json
           echo "تم إنشاء vercel.json"
 
-      # إعداد متغير بيئي لـ MongoDB
+      # 15. إعداد متغير بيئي لـ MongoDB
       - name: إعداد متغير بيئي لـ MongoDB
         run: |
           if [ -z "${{ secrets.MONGO_URI }}" ]; then
@@ -134,7 +157,7 @@ jobs:
         env:
           MONGO_URI: ${{ secrets.MONGO_URI }}
 
-      # التحقق من وجود أسرار Vercel
+      # 16. التحقق من وجود أسرار Vercel
       - name: التحقق من وجود أسرار Vercel
         run: |
           if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
@@ -151,16 +174,26 @@ jobs:
           fi
           echo "تم التحقق من وجود جميع أسرار Vercel بنجاح!"
 
-      # النشر على Vercel
+      # 17. النشر على Vercel
       - name: النشر على Vercel
         run: npx vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
-      # التحقق من الرابط بعد النشر
-      - name: التحقق من الرابط بعد النشر
+      # 18. التحقق من الرابط بعد النشر على Vercel
+      - name: التحقق من الرابط بعد النشر على Vercel
         run: |
           curl -f https://pi-meta-connect.vercel.app || { echo "خطأ: الرابط لا يعمل"; exit 1; }
           curl -f https://pi-meta-connect.vercel.app/validation-key.txt || { echo "خطأ: ملف validation-key.txt غير متاح"; exit 1; }
           echo "الرابط يعمل بنجاح!"
+
+      # 19. النشر على صفحات GitHub
+      - name: النشر على صفحات GitHub
+        uses: peaceiris/actions-gh-pages@v4
+        if: github.ref == 'refs/heads/main' # النشر فقط عند الدفع إلى main
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }} # رمز GitHub للمصادقة
+          publish_dir: ./client/build # المجلد الذي يحتوي على الملفات المبنية
+          keep_files: false # استبدال الملفات القديمة للتحسين
+          commit_message: "Deploy to GitHub Pages - ${{ github.sha }}" # رسالة الـ Commit
