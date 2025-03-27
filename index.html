@@ -1,28 +1,31 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PiMetaConnect</title>
-  <style>
-    body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-    h1 { color: #333; }
-    p { color: #666; }
-  </style>
-</head>
-<body>
-  <h1>Welcome to PiMetaConnect</h1>
-  <p id="message">Loading...</p>
-  <script>
-    fetch('/')
-      .then(response => response.text())
-      .then(data => {
-        document.getElementById('message').innerText = data;
-      })
-      .catch(error => {
-        document.getElementById('message').innerText = 'Error connecting to server';
-        console.error('Error:', error);
-      });
-  </script>
-</body>
-</html>
+const express = require('express');
+const mongoose = require('mongoose');
+const path = require('path');
+
+const app = express();
+const port = process.env.PORT || 3000;
+
+// الاتصال بـ MongoDB باستخدام متغير البيئة MONGO_URI
+const mongoUri = process.env.MONGO_URI;
+
+mongoose.connect(mongoUri, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    console.log('تم الاتصال بـ MongoDB بنجاح!');
+  })
+  .catch((err) => {
+    console.error('خطأ في الاتصال بـ MongoDB:', err.message);
+    process.exit(1);
+  });
+
+// خدمة الملفات الثابتة من مجلد public
+app.use(express.static(path.join(__dirname, 'public')));
+
+// مسار رئيسي للتأكد من أن الخادم يعمل
+app.get('/', (req, res) => {
+  res.send('PiMetaConnect يعمل بنجاح مع MongoDB!');
+});
+
+// تشغيل الخادم
+app.listen(port, () => {
+  console.log(`الخادم يعمل على المنفذ ${port}`);
+});
