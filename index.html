@@ -1,75 +1,28 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MetaConnect</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            color: #333;
-            margin: 0;
-            padding: 20px;
-            line-height: 1.6;
-        }
-
-        header {
-            background: #4CAF50;
-            color: white;
-            padding: 10px 0;
-            text-align: center;
-        }
-
-        h1 {
-            margin: 0;
-        }
-
-        p {
-            margin: 15px 0;
-        }
-
-        .btn {
-            display: inline-block;
-            background: #008CBA;
-            color: white;
-            padding: 10px 15px;
-            text-decoration: none;
-            border-radius: 5px;
-            transition: background 0.3s;
-        }
-
-        .btn:hover {
-            background: #005f7f;
-        }
-
-        footer {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 0.9em;
-            color: #666;
-        }
-
-        .logo {
-            width: 100px; /* يمكنك تعديل الحجم حسب الحاجة */
-            margin: 20px auto;
-            display: block;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PiMetaConnect</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+    h1 { color: #333; }
+    p { color: #666; }
+  </style>
 </head>
 <body>
-    <header>
-        <h1>مرحباً بك في MetaConnect</h1>
-        <img src="path_to_logo_image" alt="شعار MetaConnect" class="logo">
-    </header>
-    
-    <main>
-        <p>هذه الصفحة مخصصة لتقديم خدمات MetaConnect. نحن هنا لمساعدتك في التواصل وإدارة الشبكات بسهولة وسرعة.</p>
-        <a class="btn" href="https://www.privacypolicy.com">لزيارة سياسة الخصوصية</a>
-    </main>
-
-    <footer>
-        <p>جميع الحقوق محفوظة &copy; 2025 MetaConnect, Inc.</p>
-    </footer>
+  <h1>Welcome to PiMetaConnect</h1>
+  <p id="message">Loading...</p>
+  <script>
+    fetch('/')
+      .then(response => response.text())
+      .then(data => {
+        document.getElementById('message').innerText = data;
+      })
+      .catch(error => {
+        document.getElementById('message').innerText = 'Error connecting to server';
+        console.error('Error:', error);
+      });
+  </script>
 </body>
 </html>
