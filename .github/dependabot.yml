@@ -1,5 +1,6 @@
 # ملف إعدادات Dependabot لإدارة تحديثات التبعيات تلقائيًا
-# يهدف هذا الملف إلى تغطية الواجهة الأمامية، الخلفية، وGitHub Actions مع ميزات متقدمة
+# يغطي هذا الملف الواجهة الأمامية، الخلفية، GitHub Actions، Docker، وPython
+# تحديثات الأمان تُدار تلقائيًا عند تفعيلها في إعدادات المستودع
 version: 2
 
 updates:
@@ -7,62 +8,52 @@ updates:
   - package-ecosystem: "npm"
     directory: "/frontend" # مسار ملف package.json للواجهة الأمامية
     schedule:
-      interval: "weekly" # فحص التحديثات كل أسبوع (الإثنين الساعة 00:00 UTC)
-      time: "00:00" # توقيت الفحص لتجنب ساعات الذروة
-      timezone: "UTC" # التوقيت المستخدم
-    open-pull-requests-limit: 50 # خفض الحد إلى 50 لتحسين الإدارة (200 قد يكون مرتفعًا)
-    versioning-strategy: "auto" # استراتيجية تحديث الإصدارات (تلقائي بناءً على package.json)
+      interval: "weekly" # فحص التحديثات أسبوعيًا (الإثنين 00:00 UTC)
+      time: "00:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 50 # حد 50 طلب سحب لتسهيل الإدارة
+    versioning-strategy: "auto" # استراتيجية تحديث تلقائية بناءً على package.json
     commit-message:
-      prefix: "fix(frontend)" # بادئة واضحة لتحديد التزامات الواجهة الأمامية
-      include: "scope" # تضمين النطاق في رسالة الالتزام
+      prefix: "fix(frontend)" # بادئة واضحة لرسائل الالتزام
+      include: "scope"
     labels:
-      - "dependencies" # تسمية لتتبع طلبات السحب
-      - "frontend" # تسمية لتحديد الواجهة الأمامية
+      - "dependencies" # تسمية لتتبع التبعيات
+      - "frontend" # تسمية للواجهة الأمامية
       - "automated" # تسمية للتحديثات التلقائية
     groups:
-      security: # تجميع تحديثات الأمان في طلب سحب واحد
+      minor-patch: # تجميع التحديثات الثانوية والتصحيحية في طلب سحب واحد
         patterns:
-          - "*" # تضمين جميع التبعيات لتحديثات الأمان
-        update-types:
-          - "security" # التركيز على تحديثات الأمان
-      minor-patch: # تجميع التحديثات الثانوية والتصحيحية
-        patterns:
-          - "*" # تضمين جميع التبعيات
+          - "*" # يشمل جميع التبعيات
         update-types:
           - "minor" # تحديثات الإصدارات الثانوية
           - "patch" # تحديثات الإصدارات التصحيحية
     ignore:
-      - dependency-name: "some-package" # استبعاد حزمة معينة غير ضرورية
-      - dependency-name: "eslint" # تجاهل إصدارات eslint المحددة لتجنب التعارضات
-        versions: [">=8.0.0", "<9.0.0"] # نطاق إصدارات أكثر دقة
-      - dependency-name: "@typescript-eslint/*" # تجاهل جميع الحزم المتعلقة بـ typescript-eslint
-        versions: [">=4.0.0", "<5.0.0"] # نطاق إصدارات لتجنب مشاكل التوافق
+      - dependency-name: "some-package" # استبعاد حزمة معينة
+      - dependency-name: "eslint" # تجاهل eslint لتجنب التعارضات
+        versions: [">=8.0.0", "<9.0.0"] # نطاق إصدارات دقيق
+      - dependency-name: "@typescript-eslint/*" # تجاهل حزم typescript-eslint
+        versions: [">=4.0.0", "<5.0.0"] # تجنب مشاكل التوافق
     reviewers:
-      - "frontend-team" # إضافة فريق مراجعة لتسريع عملية الموافقة
+      - "frontend-team" # فريق الواجهة الأمامية للمراجعة
     target-branch: "main" # الفرع المستهدف لطلبات السحب
 
   # 2. تحديث تبعيات npm للواجهة الخلفية (Backend)
   - package-ecosystem: "npm"
     directory: "/backend" # مسار ملف package.json للواجهة الخلفية
     schedule:
-      interval: "weekly" # فحص التحديثات كل أسبوع (الأربعاء الساعة 00:00 UTC)
+      interval: "weekly" # فحص التحديثات أسبوعيًا (الأربعاء 00:00 UTC)
       time: "00:00"
       timezone: "UTC"
-    open-pull-requests-limit: 50 # حد معقول لإدارة طلبات السحب
-    versioning-strategy: "auto" # تحديث الإصدارات تلقائيًا
+    open-pull-requests-limit: 50 # حد 50 طلب سحب
+    versioning-strategy: "auto"
     commit-message:
-      prefix: "fix(backend)" # بادئة واضحة لتحديد التزامات الواجهة الخلفية
+      prefix: "fix(backend)"
       include: "scope"
     labels:
       - "dependencies"
       - "backend"
       - "automated"
     groups:
-      security: # تجميع تحديثات الأمان
-        patterns:
-          - "*"
-        update-types:
-          - "security"
       minor-patch: # تجميع التحديثات الثانوية والتصحيحية
         patterns:
           - "*"
@@ -70,81 +61,77 @@ updates:
           - "minor"
           - "patch"
     ignore:
-      - dependency-name: "some-package" # استبعاد حزمة معينة
-      - dependency-name: "eslint" # تجاهل إصدارات eslint
+      - dependency-name: "some-package"
+      - dependency-name: "eslint"
         versions: [">=8.0.0", "<9.0.0"]
-      - dependency-name: "@typescript-eslint/*" # تجاهل حزم typescript-eslint
+      - dependency-name: "@typescript-eslint/*"
         versions: [">=4.0.0", "<5.0.0"]
     reviewers:
-      - "backend-team" # فريق مراجعة الواجهة الخلفية
+      - "backend-team" # فريق الواجهة الخلفية للمراجعة
     target-branch: "main"
 
   # 3. تحديث تبعيات GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/" # المسار الأساسي لملفات GitHub Actions
     schedule:
-      interval: "daily" # فحص يومي لضمان تحديثات سريعة
+      interval: "daily" # فحص يومي لتحديثات سريعة
       time: "02:00" # توقيت مختلف لتوزيع الحمل
       timezone: "UTC"
-    open-pull-requests-limit: 10 # حد أقل لأن تحديثات Actions أقل تكرارًا
+    open-pull-requests-limit: 10 # حد أقل لتحديثات Actions
     commit-message:
-      prefix: "chore(actions)" # بادئة لتحديثات الصيانة
+      prefix: "chore(actions)"
       include: "scope"
     labels:
       - "github-actions"
       - "automated"
     ignore:
-      - dependency-name: "actions/setup-node" # تجاهل تحديثات معينة غير ضرورية
-      - dependency-name: "actions/checkout" # تجاهل تحديثات checkout
+      - dependency-name: "actions/setup-node" # تجاهل حزمة معينة
+      - dependency-name: "actions/checkout"
     reviewers:
-      - "devops-team" # فريق DevOps لمراجعة تحديثات Actions
+      - "devops-team" # فريق DevOps للمراجعة
 
-  # 4. تحديث تبعيات Docker (إضافة اختيارية إذا كنت تستخدم Docker)
+  # 4. تحديث تبعيات Docker (اختياري، أزل إذا لم يكن مطلوبًا)
   - package-ecosystem: "docker"
-    directory: "/" # فحص جميع ملفات Docker في المستودع
+    directory: "/" # فحص جميع ملفات Docker
     schedule:
-      interval: "weekly" # فحص أسبوعي (الجمعة)
+      interval: "weekly" # فحص أسبوعي (الجمعة 00:00 UTC)
       time: "00:00"
       timezone: "UTC"
-    open-pull-requests-limit: 20 # حد معتدل لملفات Docker
+    open-pull-requests-limit: 20 # حد معتدل لـ Docker
     commit-message:
-      prefix: "fix(docker)" # بادئة لتحديثات Docker
+      prefix: "fix(docker)"
       include: "scope"
     labels:
       - "docker"
       - "dependencies"
       - "automated"
     groups:
-      security: # تجميع تحديثات الأمان لـ Docker
+      minor-patch: # تجميع التحديثات الثانوية والتصحيحية
         patterns:
           - "*"
         update-types:
-          - "security"
+          - "minor"
+          - "patch"
     reviewers:
-      - "devops-team" # فريق DevOps لمراجعة تحديثات Docker
+      - "devops-team"
     target-branch: "main"
 
-  # 5. تحديث تبعيات Python (إضافة اختيارية إذا كنت تستخدم Python)
+  # 5. تحديث تبعيات Python (اختياري، أزل إذا لم يكن مطلوبًا)
   - package-ecosystem: "pip"
     directory: "/backend" # مسار ملف requirements.txt أو pyproject.toml
     schedule:
-      interval: "weekly" # فحص أسبوعي (الثلاثاء)
+      interval: "weekly" # فحص أسبوعي (الثلاثاء 00:00 UTC)
       time: "00:00"
       timezone: "UTC"
-    open-pull-requests-limit: 30 # حد معتدل لتبعيات Python
+    open-pull-requests-limit: 30 # حد معتدل لـ Python
     commit-message:
-      prefix: "fix(python)" # بادئة لتحديثات Python
+      prefix: "fix(python)"
       include: "scope"
     labels:
       - "python"
       - "dependencies"
       - "automated"
     groups:
-      security: # تجميع تحديثات الأمان
-        patterns:
-          - "*"
-        update-types:
-          - "security"
       minor-patch: # تجميع التحديثات الثانوية والتصحيحية
         patterns:
           - "*"
@@ -152,166 +139,8 @@ updates:
           - "minor"
           - "patch"
     ignore:
-      - dependency-name: "requests" # تجاهل حزمة معينة إذا لزم الأمر
-        versions: [">=2.28.0", "<3.0.0"] # نطاق إصدارات
+      - dependency-name: "requests" # تجاهل حزمة معينة
+        versions: [">=2.28.0", "<3.0.0"]
     reviewers:
-      - "backend-team" # فريق الواجهة الخلفية
-    target-branch: "main"# ملف إعدادات Dependabot لإدارة تحديثات التبعيات تلقائيًا
-# يهدف هذا الملف إلى تغطية الواجهة الأمامية، الخلفية، وGitHub Actions مع ميزات متقدمة
-version: 2
-
-updates:
-  # 1. تحديث تبعيات npm للواجهة الأمامية (Frontend)
-  - package-ecosystem: "npm"
-    directory: "/frontend" # مسار ملف package.json للواجهة الأمامية
-    schedule:
-      interval: "weekly" # فحص التحديثات كل أسبوع (الإثنين الساعة 00:00 UTC)
-      time: "00:00" # توقيت الفحص لتجنب ساعات الذروة
-      timezone: "UTC" # التوقيت المستخدم
-    open-pull-requests-limit: 50 # خفض الحد إلى 50 لتحسين الإدارة (200 قد يكون مرتفعًا)
-    versioning-strategy: "auto" # استراتيجية تحديث الإصدارات (تلقائي بناءً على package.json)
-    commit-message:
-      prefix: "fix(frontend)" # بادئة واضحة لتحديد التزامات الواجهة الأمامية
-      include: "scope" # تضمين النطاق في رسالة الالتزام
-    labels:
-      - "dependencies" # تسمية لتتبع طلبات السحب
-      - "frontend" # تسمية لتحديد الواجهة الأمامية
-      - "automated" # تسمية للتحديثات التلقائية
-    groups:
-      security: # تجميع تحديثات الأمان في طلب سحب واحد
-        patterns:
-          - "*" # تضمين جميع التبعيات لتحديثات الأمان
-        update-types:
-          - "security" # التركيز على تحديثات الأمان
-      minor-patch: # تجميع التحديثات الثانوية والتصحيحية
-        patterns:
-          - "*" # تضمين جميع التبعيات
-        update-types:
-          - "minor" # تحديثات الإصدارات الثانوية
-          - "patch" # تحديثات الإصدارات التصحيحية
-    ignore:
-      - dependency-name: "some-package" # استبعاد حزمة معينة غير ضرورية
-      - dependency-name: "eslint" # تجاهل إصدارات eslint المحددة لتجنب التعارضات
-        versions: [">=8.0.0", "<9.0.0"] # نطاق إصدارات أكثر دقة
-      - dependency-name: "@typescript-eslint/*" # تجاهل جميع الحزم المتعلقة بـ typescript-eslint
-        versions: [">=4.0.0", "<5.0.0"] # نطاق إصدارات لتجنب مشاكل التوافق
-    reviewers:
-      - "frontend-team" # إضافة فريق مراجعة لتسريع عملية الموافقة
-    target-branch: "main" # الفرع المستهدف لطلبات السحب
-
-  # 2. تحديث تبعيات npm للواجهة الخلفية (Backend)
-  - package-ecosystem: "npm"
-    directory: "/backend" # مسار ملف package.json للواجهة الخلفية
-    schedule:
-      interval: "weekly" # فحص التحديثات كل أسبوع (الأربعاء الساعة 00:00 UTC)
-      time: "00:00"
-      timezone: "UTC"
-    open-pull-requests-limit: 50 # حد معقول لإدارة طلبات السحب
-    versioning-strategy: "auto" # تحديث الإصدارات تلقائيًا
-    commit-message:
-      prefix: "fix(backend)" # بادئة واضحة لتحديد التزامات الواجهة الخلفية
-      include: "scope"
-    labels:
-      - "dependencies"
-      - "backend"
-      - "automated"
-    groups:
-      security: # تجميع تحديثات الأمان
-        patterns:
-          - "*"
-        update-types:
-          - "security"
-      minor-patch: # تجميع التحديثات الثانوية والتصحيحية
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
-    ignore:
-      - dependency-name: "some-package" # استبعاد حزمة معينة
-      - dependency-name: "eslint" # تجاهل إصدارات eslint
-        versions: [">=8.0.0", "<9.0.0"]
-      - dependency-name: "@typescript-eslint/*" # تجاهل حزم typescript-eslint
-        versions: [">=4.0.0", "<5.0.0"]
-    reviewers:
-      - "backend-team" # فريق مراجعة الواجهة الخلفية
-    target-branch: "main"
-
-  # 3. تحديث تبعيات GitHub Actions
-  - package-ecosystem: "github-actions"
-    directory: "/" # المسار الأساسي لملفات GitHub Actions
-    schedule:
-      interval: "daily" # فحص يومي لضمان تحديثات سريعة
-      time: "02:00" # توقيت مختلف لتوزيع الحمل
-      timezone: "UTC"
-    open-pull-requests-limit: 10 # حد أقل لأن تحديثات Actions أقل تكرارًا
-    commit-message:
-      prefix: "chore(actions)" # بادئة لتحديثات الصيانة
-      include: "scope"
-    labels:
-      - "github-actions"
-      - "automated"
-    ignore:
-      - dependency-name: "actions/setup-node" # تجاهل تحديثات معينة غير ضرورية
-      - dependency-name: "actions/checkout" # تجاهل تحديثات checkout
-    reviewers:
-      - "devops-team" # فريق DevOps لمراجعة تحديثات Actions
-
-  # 4. تحديث تبعيات Docker (إضافة اختيارية إذا كنت تستخدم Docker)
-  - package-ecosystem: "docker"
-    directory: "/" # فحص جميع ملفات Docker في المستودع
-    schedule:
-      interval: "weekly" # فحص أسبوعي (الجمعة)
-      time: "00:00"
-      timezone: "UTC"
-    open-pull-requests-limit: 20 # حد معتدل لملفات Docker
-    commit-message:
-      prefix: "fix(docker)" # بادئة لتحديثات Docker
-      include: "scope"
-    labels:
-      - "docker"
-      - "dependencies"
-      - "automated"
-    groups:
-      security: # تجميع تحديثات الأمان لـ Docker
-        patterns:
-          - "*"
-        update-types:
-          - "security"
-    reviewers:
-      - "devops-team" # فريق DevOps لمراجعة تحديثات Docker
-    target-branch: "main"
-
-  # 5. تحديث تبعيات Python (إضافة اختيارية إذا كنت تستخدم Python)
-  - package-ecosystem: "pip"
-    directory: "/backend" # مسار ملف requirements.txt أو pyproject.toml
-    schedule:
-      interval: "weekly" # فحص أسبوعي (الثلاثاء)
-      time: "00:00"
-      timezone: "UTC"
-    open-pull-requests-limit: 30 # حد معتدل لتبعيات Python
-    commit-message:
-      prefix: "fix(python)" # بادئة لتحديثات Python
-      include: "scope"
-    labels:
-      - "python"
-      - "dependencies"
-      - "automated"
-    groups:
-      security: # تجميع تحديثات الأمان
-        patterns:
-          - "*"
-        update-types:
-          - "security"
-      minor-patch: # تجميع التحديثات الثانوية والتصحيحية
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
-    ignore:
-      - dependency-name: "requests" # تجاهل حزمة معينة إذا لزم الأمر
-        versions: [">=2.28.0", "<3.0.0"] # نطاق إصدارات
-    reviewers:
-      - "backend-team" # فريق الواجهة الخلفية
+      - "backend-team"
     target-branch: "main"
