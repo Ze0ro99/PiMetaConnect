@@ -1,184 +1,57 @@
-# سير عمل CI/CD لاختبار، بناء، ونشر المشروع إلى Vercel
-name: CI/CD Pipeline for Vercel
+name: CI/CD Pipeline
 
-# التشغيل عند الدفع أو طلبات السحب على الفرع الرئيسي
 on:
   push:
     branches:
-      - main # الفرع الرئيسي
+      - main
   pull_request:
     branches:
-      - main # الهدف لطلبات السحب
-
-# الأذونات المطلوبة للسير
-permissions:
-  contents: write # للسماح بالكتابة في المستودع
-  pull-requests: read # لقراءة طلبات السحب
-  issues: write # لإنشاء مشكلات GitHub عند الإخفاق (اختياري)
-
-# المتغيرات البيئية العامة
-env:
-  NODE_VERSION: '20' # إصدار Node.js
-  CACHE_TYPE: 'npm' # نوع التخزين المؤقت (npm, yarn, pnpm)
-  FRONTEND_DIR: './frontend' # مسار الواجهة الأمامية
-  BACKEND_DIR: './backend' # مسار الواجهة الخلفية
-  VERCEL_URL: 'https://pi-meta-connect.vercel.app' # رابط النشر
-  VALIDATION_FILE: 'validation-key.txt' # ملف التحقق
+      - main
 
 jobs:
-  # وظيفة لاختبار وبناء المشروع
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
-    steps:
-      # 1. التحقق من المستودع
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # جلب كامل التاريخ لتحليل التغييرات
 
-      # 2. إعداد Node.js
-      - name: Set up Node.js
+    steps:
+      # إعداد Node.js مع التخزين المؤقت
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: ${{ env.CACHE_TYPE }}
-          cache-dependency-path: |
-            ${{ env.FRONTEND_DIR }}/package-lock.json
-            ${{ env.BACKEND_DIR }}/package-lock.json # دعم المسارات الفرعية
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
 
-      # 3. التحقق من وجود ملف قفل التبعيات وتثبيت التبعيات (frontend)
-      - name: Install frontend dependencies
-        working-directory: ${{ env.FRONTEND_DIR }}
-        run: |
-          if [ ! -f package-lock.json ]; then
-            echo "package-lock.json not found in frontend. Generating one..."
-            npm install --package-lock-only
-          fi
-          npm ci # تثبيت التبعيات بناءً على package-lock.json
+      # تثبيت التبعيات
+      - name: Install Dependencies
+        run: npm ci
 
-      # 4. تشغيل فحص Linting (اختياري)
-      - name: Run ESLint
-        working-directory: ${{ env.FRONTEND_DIR }}
-        run: npm run lint || true # تشغيل Linting، لا يفشل إذا لم يكن موجودًا
-        if: always() # تشغيل حتى لو فشلت خطوات سابقة
+      # تشغيل الاختبارات أو الأوامر الأخرى (مثال)
+      - name: Run Tests
+        run: npm test
 
-      # 5. تشغيل اختبارات الواجهة الأمامية
-      - name: Run frontend tests
-        working-directory: ${{ env.FRONTEND_DIR }}
-        run: npm test || true # تشغيل الاختبارات، لا يفشل إذا لم تكن موجودة
-        env:
-          CI: true # ضمان تشغيل الاختبارات في بيئة CI
-
-      # 6. بناء الواجهة الأمامية
-      - name: Build frontend
-        working-directory: ${{ env.FRONTEND_DIR }}
-        run: npm run build
-        env:
-          NODE_ENV: production # ضمان البناء للإنتاج
-
-      # 7. التحقق من وجود ملف قفل التبعيات وتثبيت التبعيات (backend)
-      - name: Install backend dependencies
-        working-directory: ${{ env.BACKEND_DIR }}
-        run: |
-          if [ ! -f package-lock.json ]; then
-            echo "package-lock.json not found in backend. Generating one..."
-            npm install --package-lock-only
-          fi
-          npm ci
-
-      # 8. تشغيل اختبارات الواجهة الخلفية
-      - name: Run backend tests
-        working-directory: ${{ env.BACKEND_DIR }}
-        run: npm test || true # تشغيل الاختبارات، لا يفشل إذا لم تكن موجودة
-        env:
-          NODE_ENV: test # بيئة الاختبار
-
-  # وظيفة النشر إلى Vercel
-  deploy:
-    needs: build-and-test # يعتمد على نجاح الاختبار والبناء
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' # النشر فقط عند الدفع إلى main
-    steps:
-      # 1. التحقق من المستودع
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      # 2. إعداد Node.js
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: ${{ env.CACHE_TYPE }}
-          cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
-
-      # 3. التحقق من أسرار Vercel
-      - name: Verify Vercel secrets
-        run: |
-          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
-            echo "خطأ: VERCEL_TOKEN غير موجود في الأسرار"
-            exit 1
-          fi
-          if [ -z "${{ secrets.VERCEL_ORG_ID }}" ]; then
-            echo "خطأ: VERCEL_ORG_ID غير موجود في الأسرار"
-            exit 1
-          fi
-          if [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
-            echo "خطأ: VERCEL_PROJECT_ID غير موجود في الأسرار"
-            exit 1
-          fi
-          echo "تم التحقق من جميع أسرار Vercel بنجاح!"
-
-      # 4. تثبيت التبعيات وبناء الواجهة الأمامية
-      - name: Install and build frontend
-        working-directory: ${{ env.FRONTEND_DIR }}
-        run: |
-          npm ci
-          npm run build
-        env:
-          NODE_ENV: production
-
-      # 5. النشر على Vercel
-      - name: Deploy to Vercel
-        working-directory: ${{ env.FRONTEND_DIR }}
-        run: npx vercel --prod --token ${{ secrets.VERCEL_TOKEN }} --confirm
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
-      # 6. التحقق من الرابط بعد النشر
-      - name: Verify deployment
-        run: |
-          sleep 10 # الانتظار لضمان اكتمال النشر
-          curl -f ${{ env.VERCEL_URL }} || { echo "خطأ: الرابط ${{ env.VERCEL_URL }} لا يعمل"; exit 1; }
-          curl -f ${{ env.VERCEL_URL }}/${{ env.VALIDATION_FILE }} || { echo "خطأ: ملف ${{ env.VALIDATION_FILE }} غير متاح"; exit 1; }
-          echo "تم النشر بنجاح والرابط يعمل!"
-
-  # وظيفة إشعارات الإخفاق
-  notify:
-    needs: [build-and-test, deploy]
-    runs-on: ubuntu-latest
-    if: failure() # تشغيل فقط عند فشل أي وظيفة
-    steps:
-      # إنشاء مشكلة GitHub عند الإخفاق
-      - name: Create GitHub Issue on failure
+      # إنشاء Issue في GitHub عند الفشل
+      - name: Create GitHub Issue on Failure
+        if: failure()
         uses: actions/github-script@v7
         with:
           script: |
-            github.rest.issues.create({
+            await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: 'CI/CD Pipeline Failure - Run #${{ github.run_id }}',
+              title: `CI/CD Pipeline Failure - Run #${{ github.run_id }}`,
               body: `The CI/CD pipeline failed. Please check the run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`
-            })
+            });
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # إرسال إشعار إلى Slack (اختياري)
+      # إرسال إشعار إلى Slack عند الفشل
       - name: Notify on Slack
-        if: env.SLACK_WEBHOOK != ''
+        if: failure() && env.SLACK_WEBHOOK != ''
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
           SLACK_TITLE: "CI/CD Pipeline Failure"
           SLACK_MESSAGE: "The CI/CD pipeline for ${{ github.repository }} failed. Check the run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           SLACK_COLOR: danger
+          SLACK_USERNAME: GitHub Actions
+          SLACK_ICON: https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png
