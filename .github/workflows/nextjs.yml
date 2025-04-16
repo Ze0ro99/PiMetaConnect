@@ -1,7 +1,6 @@
-# اسم العملية
 name: النشر على Vercel
 
-# متى يتم تشغيل العملية
+# متى يتم التشغيل
 on:
   push:
     branches:
@@ -12,65 +11,77 @@ on:
       - main
       - Ze0ro99-patch-1
 
-# المهام
+# الأذونات المطلوبة
+permissions:
+  contents: read # لسحب الكود
+  pull-requests: read # لقراءة طلبات السحب
+
+# المتغيرات البيئية
+env:
+  NODE_VERSION: '20' # إصدار Node.js
+  CACHE_TYPE: 'npm' # نوع التخزين المؤقت
+
 jobs:
   deploy:
-    # تشغيل المهمة على نظام Ubuntu الأحدث
     runs-on: ubuntu-latest
-
-    # الخطوات
     steps:
-      # سحب الكود من المستودع
+      # 1. سحب الكود من المستودع
       - name: سحب الكود
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # جلب كامل التاريخ
 
-      # إعداد Node.js
+      # 2. إعداد Node.js
       - name: إعداد Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: ${{ env.NODE_VERSION }}
+          cache: ${{ env.CACHE_TYPE }}
+          cache-dependency-path: package-lock.json # تحديد ملف القفل
 
-      # تثبيت التبعيات باستخدام npm
-      - name: تثبيت التبعيات
+      # 3. التحقق من وجود package.json وpackage-lock.json
+      - name: التحقق من ملفات التبعيات
         run: |
+          if [ ! -f package.json ]; then
+            echo "خطأ: ملف package.json غير موجود"
+            exit 1
+          fi
           if [ ! -f package-lock.json ]; then
-            echo "package-lock.json غير موجود. إنشاء واحد جديد..."
+            echo "لم يتم العثور على package-lock.json. جارٍ إنشاء واحد..."
             npm install --package-lock-only
           fi
-          npm ci
 
-      # إنشاء ملف validation-key.txt في المجلد public
+      # 4. تثبيت التبعيات
+      - name: تثبيت التبعيات
+        run: npm ci
+
+      # 5. إنشاء ملف validation-key.txt في المجلد public
       - name: إنشاء ملف validation-key.txt
         run: |
           mkdir -p public
           echo "5d8bc63cfa473df9a90c3308432e255c892f4b363143dfd8fa98c6c44d1b0bda13b78ce5a9c195b1648220c33a7b4f026b8176c0a0c87ba421c309533a57480c" > public/validation-key.txt
           echo "تم إنشاء ملف validation-key.txt"
 
-      # إنشاء ملف vercel.json
+      # 6. إنشاء ملف vercel.json
       - name: إنشاء ملف vercel.json
         run: |
           echo '{"version": 2, "builds": [{"src": "index.js", "use": "@vercel/node"}], "routes": [{"src": "/validation-key.txt", "dest": "/public/validation-key.txt"}, {"src": "/(.*)", "dest": "index.js"}]}' > vercel.json
-          echo "تم إنشاء vercel.json"
+          echo "تم إنشاء ملف vercel.json"
 
-      # إعداد متغير بيئي لـ MongoDB
-      - name: إعداد متغير بيئي لـ MongoDB
+      # 7. إعداد متغيرات بيئية لـ MongoDB
+      - name: إعداد متغيرات MongoDB
         run: |
           echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> $GITHUB_ENV
-        env:
-          MONGO_URI: ${{ secrets.MONGO_URI }}
 
-      # التحقق من تشغيل الخادم
+      # 8. التحقق من تشغيل الخادم
       - name: التحقق من تشغيل الخادم
         run: |
           npm start &
           sleep 5
-          curl http://localhost:3000
+          curl -f http://localhost:3000 || { echo "فشل التحقق من الخادم"; exit 1; }
           echo "تم التحقق من تشغيل الخادم بنجاح!"
 
-      # النشر على Vercel
+      # 9. النشر على Vercel
       - name: النشر على Vercel
         run: npx vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
         env:
