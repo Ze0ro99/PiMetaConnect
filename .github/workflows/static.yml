@@ -1,52 +1,143 @@
-name: Static Site CI
+name: خط أنابيب CI/CD
 
+# التشغيل عند الدفع أو طلبات السحب على الفرع الرئيسي
 on:
   push:
     branches:
-      - main  # الفرع الرئيسي للمشروع
+      - main
   pull_request:
     branches:
-      - main  # الفرع المستهدف لـ Pull Requests
+      - main
+
+# الأذونات المطلوبة
+permissions:
+  contents: write # للنشر إلى GitHub Pages
+  pull-requests: read # لقراءة طلبات السحب
+
+# المتغيرات البيئية
+env:
+  NODE_VERSION: '20' # إصدار Node.js
+  CACHE_TYPE: 'npm' # نوع التخزين المؤقت
+  FRONTEND_DIR: './frontend' # مسار الواجهة الأمامية
+  BACKEND_DIR: './backend' # مسار الواجهة الخلفية
+  BUILD_DIR: './frontend/build' # مسار ملفات البناء
 
 jobs:
-  build:
+  # وظيفة البناء والاختبار
+  build-and-test:
     runs-on: ubuntu-latest
-
     steps:
       # 1. التحقق من المستودع
-      - name: Check out code
+      - name: مستودع الخروج
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # جلب كامل التاريخ لضمان عملية النشر
+          fetch-depth: 0 # جلب كامل التاريخ لتحليل التغييرات
 
       # 2. إعداد Node.js
-      - name: Set up Node.js
+      - name: إعداد Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'  # إصدار Node.js المطابق للمشروع
-          cache: 'npm'  # تسريع التثبيت باستخدام الذاكرة المؤقتة
+          node-version: ${{ env.NODE_VERSION }}
+          cache: ${{ env.CACHE_TYPE }}
+          cache-dependency-path: |
+            ${{ env.FRONTEND_DIR }}/package-lock.json
+            ${{ env.BACKEND_DIR }}/package-lock.json
 
-      # 3. التحقق من وجود package-lock.json وتثبيت التبعيات
-      - name: Install dependencies
+      # 3. التحقق من وجود package-lock.json وتثبيت تبعيات الواجهة الأمامية
+      - name: تثبيت تبعيات الواجهة الأمامية
+        working-directory: ${{ env.FRONTEND_DIR }}
         run: |
           if [ ! -f package-lock.json ]; then
-            echo "package-lock.json غير موجود. إنشاء واحد جديد..."
+            echo "لم يتم العثور على package-lock.json في الواجهة الأمامية. جارٍ إنشاء واحد..."
             npm install --package-lock-only
           fi
-          npm ci  # تثبيت التبعيات بناءً على package-lock.json
+          npm ci
 
-      # 4. بناء المشروع
-      - name: Build
+      # 4. تشغيل اختبارات الواجهة الأمامية
+      - name: تشغيل اختبارات الواجهة الأمامية
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm test
+        env:
+          CI: true # تشغيل الاختبارات في وضع CI
+
+      # 5. بناء الواجهة الأمامية
+      - name: بناء الواجهة الأمامية
+        working-directory: ${{ env.FRONTEND_DIR }}
         run: npm run build
         env:
-          NODE_ENV: production  # ضمان البناء للإنتاج
+          NODE_ENV: production
 
-      # 5. النشر إلى GitHub Pages
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        if: github.ref == 'refs/heads/main'  # النشر فقط عند الدفع إلى main
+      # 6. التحقق من وجود package-lock.json وتثبيت تبعيات الواجهة الخلفية
+      - name: تثبيت تبعيات الواجهة الخلفية
+        working-directory: ${{ env.BACKEND_DIR }}
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "لم يتم العثور على package-lock.json في الواجهة الخلفية. جارٍ إنشاء واحد..."
+            npm install --package-lock-only
+          fi
+          npm ci
+
+      # 7. تشغيل اختبارات الواجهة الخلفية
+      - name: تشغيل اختبارات الواجهة الخلفية
+        working-directory: ${{ env.BACKEND_DIR }}
+        run: npm test
+        env:
+          NODE_ENV: test
+
+  # وظيفة النشر إلى GitHub Pages
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      # 1. التحقق من المستودع
+      - name: مستودع الخروج
+        uses: actions/checkout@v4
+
+      # 2. إعداد Node.js
+      - name: إعداد Node.js
+        uses: actions/setup-node@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}  # رمز GitHub للمصادقة
-          publish_dir: ./build  # المجلد الذي يحتوي على الملفات المبنية
-          keep_files: false  # استبدال الملفات القديمة بدلاً من الاحتفاظ بها
-          commit_message: "Deploy to GitHub Pages - ${{ github.sha }}"  # رسالة الـ Commit
+          node-version: ${{ env.NODE_VERSION }}
+          cache: ${{ env.CACHE_TYPE }}
+          cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
+
+      # 3. تثبيت وبناء الواجهة الأمامية
+      - name: تثبيت وبناء الواجهة الأمامية
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: |
+          npm ci
+          npm run build
+        env:
+          NODE_ENV: production
+
+      # 4. النشر إلى GitHub Pages
+      - name: النشر إلى GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ${{ env.BUILD_DIR }}
+          keep_files: false
+          commit_message: "النشر إلى GitHub Pages - ${{ github.sha }}"
+          # cname: example.com # أزل التعليق إذا كنت تستخدم نطاقًا مخصصًا
+
+  # وظيفة إشعارات الفشل
+  notify:
+    needs: [build-and-test, deploy]
+    runs-on: ubuntu-latest
+    if: failure() && ${{ secrets.SLACK_WEBHOOK != '' }} # تصحيح الشرط باستخدام secrets مباشرة
+    steps:
+      # خطوة تصحيح للتحقق من المتغيرات
+      - name: تصحيح المتغيرات
+        run: |
+          echo "SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}"
+      # إرسال إشعار عند الفشل
+      - name: إعلام عند الفشل
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_TITLE: "فشل خط أنابيب CI/CD"
+          SLACK_MESSAGE: "فشل خط أنابيب CI/CD لـ ${{ github.repository }}. تحقق من التشغيل: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          SLACK_COLOR: danger
+          SLACK_USERNAME: GitHub Actions
+          SLACK_ICON: https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png

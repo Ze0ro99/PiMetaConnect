@@ -1,4 +1,4 @@
-flask==2.2.5
+flask==3.1.0
 pandas==1.5.3
 stellar-sdk
 requests

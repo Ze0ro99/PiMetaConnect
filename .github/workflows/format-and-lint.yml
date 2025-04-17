@@ -1,166 +1,57 @@
-# اسم العملية
-name: التكامل المستمر والنشر والتحديث التلقائي
+name: CI/CD Pipeline
 
-# متى يتم التشغيل
 on:
   push:
-    branches: [ "main", "Ze0ro99-patch-1" ]
+    branches:
+      - main
   pull_request:
-    branches: [ "main", "Ze0ro99-patch-1" ]
-  schedule:
-    - cron: '0 0 * * 0' # كل يوم أحد الساعة 00:00 UTC
+    branches:
+      - main
 
-# المهام
 jobs:
-  ci-cd:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      # سحب الكود
-      - name: سحب الكود
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      # إعداد Node.js
-      - name: إعداد Node.js
+      # إعداد Node.js مع التخزين المؤقت
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
 
-      # إزالة ملفات قفل التبعيات غير الضرورية
-      - name: إزالة ملفات قفل التبعيات غير الضرورية
-        run: |
-          rm -f yarn.lock npm-shrinkwrap.json
-          cd client
-          rm -f yarn.lock npm-shrinkwrap.json
-          echo "تم إزالة ملفات yarn.lock و npm-shrinkwrap.json بنجاح!"
+      # تثبيت التبعيات
+      - name: Install Dependencies
+        run: npm ci
 
-      # تحديث التبعيات تلقائيًا للخادم
-      - name: تحديث التبعيات تلقائيًا للخادم
-        run: |
-          npm install -g npm-check-updates
-          ncu -u
-          npm install
-          echo "تم تحديث التبعيات بنجاح!"
+      # تشغيل الاختبارات أو الأوامر الأخرى (مثال)
+      - name: Run Tests
+        run: npm test
 
-      # تثبيت تبعيات الخادم
-      - name: تثبيت تبعيات الخادم
-        run: npm install
-
-      # تثبيت تبعيات تطبيق React
-      - name: تثبيت تبعيات تطبيق React
-        run: cd client && npm install
-
-      # تحديث التبعيات تلقائيًا لتطبيق React
-      - name: تحديث التبعيات تلقائيًا لتطبيق React
-        run: |
-          cd client
-          npm install -g npm-check-updates
-          ncu -u
-          npm install
-          echo "تم تحديث تبعيات تطبيق React بنجاح!"
-
-      # تهيئة ملفات YAML باستخدام Prettier
-      - name: تهيئة ملفات YAML باستخدام Prettier
-        run: |
-          npm install prettier --save-dev
-          npx prettier --write "**/*.yml"
-          echo "تم تهيئة ملفات YAML بنجاح!"
-
-      # تشغيل Prettier لتهيئة الكود
-      - name: تشغيل Prettier لتهيئة الكود
-        run: |
-          cd client
-          npx prettier --write "src/**/*.{js,jsx,ts,tsx}"
-          echo "تم تهيئة الكود باستخدام Prettier بنجاح!"
-
-      # رفع التغييرات بعد تشغيل Prettier
-      - name: رفع التغييرات بعد تشغيل Prettier
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          git add .
-          if git diff --staged --quiet; then
-            echo "لا توجد تغييرات لرفعها"
-          else
-            git commit -m "تهيئة الكود وملفات YAML باستخدام Prettier بواسطة GitHub Actions"
-            git push
-            echo "تم رفع التغييرات بنجاح!"
-          fi
+      # إنشاء Issue في GitHub عند الفشل
+      - name: Create GitHub Issue on Failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `CI/CD Pipeline Failure - Run #${{ github.run_id }}`,
+              body: `The CI/CD pipeline failed. Please check the run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`
+            });
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # بناء تطبيق React
-      - name: بناء تطبيق React
-        run: cd client && npm run build
-
-      # التحقق من وجود express و mongoose
-      - name: التحقق من وجود express و mongoose
-        run: |
-          if [ ! -d node_modules/express ]; then
-            echo "خطأ: express لم يتم تثبيته بشكل صحيح"
-            exit 1
-          fi
-          if [ ! -d node_modules/mongoose ]; then
-            echo "خطأ: mongoose لم يتم تثبيته بشكل صحيح"
-            exit 1
-          fi
-          echo "express و mongoose تم تثبيتهما بنجاح!"
-
-      # إنشاء ملف validation-key.txt
-      - name: إنشاء ملف validation-key.txt
-        run: |
-          mkdir -p public
-          echo "5d8bc63cfa473df9a90c3308432e255c892f4b363143dfd8fa98c6c44d1b0bda13b78ce5a9c195b1648220c33a7b4f026b8176c0a0c87ba421c309533a57480c" > public/validation-key.txt
-          echo "تم إنشاء ملف validation-key.txt"
-
-      # إنشاء ملف vercel.json
-      - name: إنشاء ملف vercel.json
-        run: |
-          echo '{"version": 2, "builds": [{"src": "index.js", "use": "@vercel/node"}], "routes": [{"src": "/validation-key.txt", "dest": "/public/validation-key.txt"}, {"src": "/privacy-policy", "dest": "/public/privacy-policy.html"}, {"src": "/terms-of-service", "dest": "/public/terms-of-service.html"}, {"src": "/api/(.*)", "dest": "index.js"}, {"src": "/(.*)", "dest": "client/build/index.html"}]}' > vercel.json
-          echo "تم إنشاء vercel.json"
-
-      # إعداد متغير بيئي لـ MongoDB
-      - name: إعداد متغير بيئي لـ MongoDB
-        run: |
-          if [ -z "${{ secrets.MONGO_URI }}" ]; then
-            echo "خطأ: MONGO_URI غير موجود في الأسرار"
-            exit 1
-          fi
-          echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> $GITHUB_ENV
+      # إرسال إشعار إلى Slack عند الفشل
+      - name: Notify on Slack
+        if: failure() && env.SLACK_WEBHOOK != ''
+        uses: rtCamp/action-slack-notify@v2
         env:
-          MONGO_URI: ${{ secrets.MONGO_URI }}
-
-      # التحقق من وجود أسرار Vercel
-      - name: التحقق من وجود أسرار Vercel
-        run: |
-          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
-            echo "خطأ: VERCEL_TOKEN غير موجود في الأسرار"
-            exit 1
-          fi
-          if [ -z "${{ secrets.VERCEL_ORG_ID }}" ]; then
-            echo "خطأ: VERCEL_ORG_ID غير موجود في الأسرار"
-            exit 1
-          fi
-          if [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
-            echo "خطأ: VERCEL_PROJECT_ID غير موجود في الأسرار"
-            exit 1
-          fi
-          echo "تم التحقق من وجود جميع أسرار Vercel بنجاح!"
-
-      # النشر على Vercel
-      - name: النشر على Vercel
-        run: npx vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
-      # التحقق من الرابط بعد النشر
-      - name: التحقق من الرابط بعد النشر
-        run: |
-          curl -f https://pi-meta-connect.vercel.app || { echo "خطأ: الرابط لا يعمل"; exit 1; }
-          curl -f https://pi-meta-connect.vercel.app/validation-key.txt || { echo "خطأ: ملف validation-key.txt غير متاح"; exit 1; }
-          echo "الرابط يعمل بنجاح!"
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_TITLE: "CI/CD Pipeline Failure"
+          SLACK_MESSAGE: "The CI/CD pipeline for ${{ github.repository }} failed. Check the run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          SLACK_COLOR: danger
+          SLACK_USERNAME: GitHub Actions
+          SLACK_ICON: https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png
