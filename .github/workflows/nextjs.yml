@@ -1,4 +1,4 @@
-name: Deploy to Vercel (Next.js)
+name: Code Formatting and Linting
 
 on:
   push:
@@ -6,40 +6,53 @@ on:
   pull_request:
     branches: [ "main", "Ze0ro99-patch-1" ]
 
+env:
+  FRONTEND_DIR: ./frontend
+  BACKEND_DIR: ./backend
+
 jobs:
-  deploy:
+  lint:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: |
+            ${{ env.FRONTEND_DIR }}/package-lock.json
+            ${{ env.BACKEND_DIR }}/package-lock.json
 
-      - name: Install Dependencies
+      - name: Install Prettier
         run: |
-          npm ci
-          echo "Dependencies installed successfully!"
+          if [ -f "${{ env.FRONTEND_DIR }}/package-lock.json" ]; then
+            echo "Installing frontend dependencies..."
+            cd ${{ env.FRONTEND_DIR }}
+            npm install --save-dev prettier
+            cd -
+          fi
+          if [ -f "${{ env.BACKEND_DIR }}/package-lock.json" ]; then
+            echo "Installing backend dependencies..."
+            cd ${{ env.BACKEND_DIR }}
+            npm install --save-dev prettier
+            cd -
+          fi
+          if [ ! -f "${{ env.FRONTEND_DIR }}/package-lock.json" ] && [ ! -f "${{ env.BACKEND_DIR }}/package-lock.json" ]; then
+            echo "No package-lock.json found. Installing Prettier in root..."
+            npm install --save-dev prettier
+          fi
+          echo "Prettier installed successfully!"
 
-      - name: Create validation-key.txt
+      - name: Create Prettier Configuration
         run: |
-          mkdir -p public
-          echo "5d8bc63cfa473df9a90c3308432e255c892f4b363143dfd8fa98c6c44d1b0bda13b78ce5a9c195b1648220c33a7b4f026b8176c0a0c87ba421c309533a57480c" > public/validation-key.txt
-          echo "Created validation-key.txt successfully!"
+          echo '{"semi": true, "trailingComma": "es5", "singleQuote": true, "printWidth": 80}' > .prettierrc
+          echo "Created .prettierrc successfully!"
 
-      - name: Create vercel.json
+      - name: Run Prettier
         run: |
-          echo '{"version": 2, "builds": [{"src": "index.js", "use": "@vercel/node"}], "routes": [{"src": "/validation-key.txt", "dest": "/public/validation-key.txt"}, {"src": "/(.*)", "dest": "index.js"}]}' > vercel.json
-          echo "Created vercel.json successfully!"
-
-      - name: Deploy to Vercel
-        run: npx vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          npx prettier --write .
+          echo "Prettier formatting completed!"
