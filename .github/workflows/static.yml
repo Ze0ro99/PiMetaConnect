@@ -1,109 +1,72 @@
-# اسم العملية
-name: النشر على Vercel
+name: Deploy to Vercel (Static)
 
-# متى يتم تشغيل العملية
 on:
   push:
     branches: [ "main", "Ze0ro99-patch-1" ]
   pull_request:
     branches: [ "main", "Ze0ro99-patch-1" ]
 
-# المهام
 jobs:
   deploy:
-    # تشغيل المهمة على نظام Ubuntu الأحدث
     runs-on: ubuntu-latest
 
-    # الخطوات
     steps:
-      # سحب الكود من المستودع
-      - name: سحب الكود
+      - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # إعداد Node.js
-      - name: إعداد Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      # التحقق من وجود express في package.json وتثبيت التبعيات
-      - name: التحقق من وجود express وتثبيت التبعيات
+      - name: Install Dependencies and Express
         run: |
           if ! grep -q '"express"' package.json; then
-            echo "express غير موجود في package.json، يتم إضافته الآن..."
+            echo "Express not found in package.json, installing..."
             npm install express --save
           fi
-          if [ ! -f package-lock.json ]; then
-            echo "package-lock.json غير موجود. إنشاء واحد جديد..."
-            npm install --package-lock-only
-          fi
           npm ci
-          echo "تم تثبيت التبعيات بنجاح!"
+          echo "Dependencies and Express installed successfully!"
 
-      # التحقق من تثبيت express
-      - name: التحقق من تثبيت express
+      - name: Verify Express Installation
         run: |
           if [ ! -d node_modules/express ]; then
-            echo "خطأ: express لم يتم تثبيته بشكل صحيح"
+            echo "Error: Express not installed correctly"
             exit 1
           fi
-          echo "express تم تثبيته بنجاح!"
+          echo "Express installed successfully!"
 
-      # إنشاء ملف validation-key.txt في المجلد public
-      - name: إنشاء ملف validation-key.txt
+      - name: Create validation-key.txt
         run: |
           mkdir -p public
           echo "5d8bc63cfa473df9a90c3308432e255c892f4b363143dfd8fa98c6c44d1b0bda13b78ce5a9c195b1648220c33a7b4f026b8176c0a0c87ba421c309533a57480c" > public/validation-key.txt
-          echo "تم إنشاء ملف validation-key.txt"
+          echo "Created validation-key.txt successfully!"
 
-      # إنشاء ملف vercel.json
-      - name: إنشاء ملف vercel.json
+      - name: Create vercel.json
         run: |
           echo '{"version": 2, "builds": [{"src": "index.js", "use": "@vercel/node"}], "routes": [{"src": "/validation-key.txt", "dest": "/public/validation-key.txt"}, {"src": "/(.*)", "dest": "index.js"}]}' > vercel.json
-          echo "تم إنشاء vercel.json"
+          echo "Created vercel.json successfully!"
 
-      # إعداد متغير بيئي لـ MongoDB
-      - name: إعداد متغير بيئي لـ MongoDB
-        run: |
-          if [ -z "${{ secrets.MONGO_URI }}" ]; then
-            echo "خطأ: MONGO_URI غير موجود في الأسرار"
-            exit 1
-          fi
-          echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> $GITHUB_ENV
-        env:
-          MONGO_URI: ${{ secrets.MONGO_URI }}
-
-      # التحقق من وجود أسرار Vercel
-      - name: التحقق من وجود أسرار Vercel
+      - name: Verify Vercel Secrets
         run: |
           if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
-            echo "خطأ: VERCEL_TOKEN غير موجود في الأسرار"
+            echo "Error: VERCEL_TOKEN not set"
             exit 1
           fi
           if [ -z "${{ secrets.VERCEL_ORG_ID }}" ]; then
-            echo "خطأ: VERCEL_ORG_ID غير موجود في الأسرار"
+            echo "Error: VERCEL_ORG_ID not set"
             exit 1
           fi
           if [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
-            echo "خطأ: VERCEL_PROJECT_ID غير موجود في الأسرار"
+            echo "Error: VERCEL_PROJECT_ID not set"
             exit 1
           fi
-          echo "تم التحقق من وجود جميع أسرار Vercel بنجاح!"
+          echo "Vercel secrets verified successfully!"
 
-      # التحقق من تشغيل الخادم
-      - name: التحقق من تشغيل الخادم
-        run: |
-          npm start &
-          sleep 5
-          curl http://localhost:3000
-          echo "تم التحقق من تشغيل الخادم بنجاح!"
-          pkill -f "node.*index.js" || true
-
-      # النشر على Vercel
-      - name: النشر على Vercel
+      - name: Deploy to Vercel
         run: npx vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
