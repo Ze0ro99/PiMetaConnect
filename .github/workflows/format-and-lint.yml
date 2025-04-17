@@ -1,51 +1,44 @@
-# اسم العملية
-name: التحقق من تنسيق الكود
+name: Code Formatting and Linting
 
-# متى يتم تشغيل العملية
 on:
   push:
     branches: [ "main", "Ze0ro99-patch-1" ]
   pull_request:
     branches: [ "main", "Ze0ro99-patch-1" ]
 
-# المهام
 jobs:
   lint:
-    # تشغيل المهمة على نظام Ubuntu الأحدث
     runs-on: ubuntu-latest
 
-    # الخطوات
     steps:
-      # سحب الكود من المستودع
-      - name: سحب الكود
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      # إعداد Node.js
-      - name: إعداد Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      # التحقق من وجود ملفات JavaScript
-      - name: التحقق من وجود ملفات JavaScript
+      - name: Check for JavaScript Files
         run: |
           if ! ls *.js >/dev/null 2>&1; then
-            echo "لا توجد ملفات JavaScript للتحقق منها. يتم تخطي الخطوة..."
+            echo "No JavaScript files found. Skipping linting..."
             exit 0
           fi
-          echo "تم العثور على ملفات JavaScript، يتم المتابعة..."
+          echo "JavaScript files found, proceeding..."
 
-      # تثبيت Prettier
-      - name: تثبيت Prettier
+      - name: Install Prettier
         run: |
           npm install --save-dev prettier
-          echo "تم تثبيت Prettier بنجاح!"
+          echo "Prettier installed successfully!"
 
-      # إنشاء ملف تكوين Prettier
-      - name: إنشاء ملف تكوين Prettier
+      - name: Create Prettier Configuration
         run: |
           echo '{"semi": true, "trailingComma": "es5", "singleQuote": true, "printWidth": 80}' > .prettierrc
-          echo "تم إنشاء ملف .prettierrc بنجاح!"
+          echo "Created .prettierrc successfully!"
 
-      # تشغيل Prettier لتصحيح التنسيق
+      - name: Run Prettier
+        run: |
+          npx prettier --write .
+          echo "Prettier formatting completed!"
