@@ -125,8 +125,13 @@ jobs:
   notify:
     needs: [build-and-test, deploy]
     runs-on: ubuntu-latest
-    if: failure() && env.SLACK_WEBHOOK != '' # تشغيل فقط عند الفشل ووجود Webhook
+    if: failure() && ${{ secrets.SLACK_WEBHOOK != '' }} # تصحيح الشرط باستخدام secrets مباشرة
     steps:
+      # خطوة تصحيح للتحقق من المتغيرات
+      - name: تصحيح المتغيرات
+        run: |
+          echo "SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}"
+      # إرسال إشعار عند الفشل
       - name: إعلام عند الفشل
         uses: rtCamp/action-slack-notify@v2
         env:
