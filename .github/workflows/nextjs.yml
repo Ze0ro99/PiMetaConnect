@@ -20,6 +20,7 @@ permissions:
 env:
   NODE_VERSION: '20' # إصدار Node.js
   CACHE_TYPE: 'npm' # نوع التخزين المؤقت
+  ROOT_DIR: '.' # الدليل الجذر للمشروع
 
 jobs:
   deploy:
@@ -31,59 +32,107 @@ jobs:
         with:
           fetch-depth: 0 # جلب كامل التاريخ
 
-      # 2. إعداد Node.js
+      # 2. التحقق من وجود package-lock.json في الدليل الجذر
+      - name: التحقق من وجود package-lock.json
+        run: |
+          if [ ! -f "${{ env.ROOT_DIR }}/package-lock.json" ]; then
+            echo "لم يتم العثور على package-lock.json في الدليل الجذر (${{ env.ROOT_DIR }})"
+            echo "جارٍ إنشاء واحد..."
+            npm install --package-lock-only
+          else
+            echo "تم العثور على package-lock.json"
+          fi
+        working-directory: ${{ env.ROOT_DIR }}
+
+      # 3. إعداد Node.js
       - name: إعداد Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: ${{ env.CACHE_TYPE }}
-          cache-dependency-path: package-lock.json # تحديد ملف القفل
+          cache-dependency-path: ${{ env.ROOT_DIR }}/package-lock.json # تحديد المسار بشكل ديناميكي
+          always-auth: false
+          check-latest: false
 
-      # 3. التحقق من وجود package.json وpackage-lock.json
+      # 4. التحقق من ملفات التبعيات
       - name: التحقق من ملفات التبعيات
         run: |
-          if [ ! -f package.json ]; then
+          if [ ! -f "${{ env.ROOT_DIR }}/package.json" ]; then
             echo "خطأ: ملف package.json غير موجود"
             exit 1
           fi
-          if [ ! -f package-lock.json ]; then
-            echo "لم يتم العثور على package-lock.json. جارٍ إنشاء واحد..."
-            npm install --package-lock-only
+          if [ ! -f "${{ env.ROOT_DIR }}/package-lock.json" ]; then
+            echo "خطأ: ملف package-lock.json غير موجود بعد المحاولة"
+            exit 1
           fi
+        working-directory: ${{ env.ROOT_DIR }}
 
-      # 4. تثبيت التبعيات
+      # 5. تثبيت التبعيات
       - name: تثبيت التبعيات
         run: npm ci
+        working-directory: ${{ env.ROOT_DIR }}
 
-      # 5. إنشاء ملف validation-key.txt في المجلد public
+      # 6. إنشاء ملف validation-key.txt في المجلد public
       - name: إنشاء ملف validation-key.txt
         run: |
           mkdir -p public
           echo "5d8bc63cfa473df9a90c3308432e255c892f4b363143dfd8fa98c6c44d1b0bda13b78ce5a9c195b1648220c33a7b4f026b8176c0a0c87ba421c309533a57480c" > public/validation-key.txt
           echo "تم إنشاء ملف validation-key.txt"
+        working-directory: ${{ env.ROOT_DIR }}
 
-      # 6. إنشاء ملف vercel.json
+      # 7. إنشاء ملف vercel.json
       - name: إنشاء ملف vercel.json
         run: |
           echo '{"version": 2, "builds": [{"src": "index.js", "use": "@vercel/node"}], "routes": [{"src": "/validation-key.txt", "dest": "/public/validation-key.txt"}, {"src": "/(.*)", "dest": "index.js"}]}' > vercel.json
           echo "تم إنشاء ملف vercel.json"
+        working-directory: ${{ env.ROOT_DIR }}
 
-      # 7. إعداد متغيرات بيئية لـ MongoDB
+      # 8. التحقق من وجود الأسرار
+      - name: التحقق من متغيرات Vercel و MongoDB
+        run: |
+          if [ -z "${{ secrets.MONGO_URI }}" ]; then
+            echo "خطأ: MONGO_URI غير معرف في الأسرار"
+            exit 1
+          fi
+          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
+            echo "خطأ: VERCEL_TOKEN غير معرف في الأسرار"
+            exit 1
+          fi
+          if [ -z "${{ secrets.VERCEL_ORG_ID }}" ]; then
+            echo "خطأ: VERCEL_ORG_ID غير معرف في الأسرار"
+            exit 1
+          fi
+          if [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
+            echo "خطأ: VERCEL_PROJECT_ID غير معرف في الأسرار"
+            exit 1
+          fi
+          echo "تم التحقق من جميع الأسرار بنجاح"
+
+      # 9. إعداد متغيرات بيئية لـ MongoDB
       - name: إعداد متغيرات MongoDB
         run: |
           echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> $GITHUB_ENV
 
-      # 8. التحقق من تشغيل الخادم
+      # 10. التحقق من تشغيل الخادم
       - name: التحقق من تشغيل الخادم
         run: |
           npm start &
-          sleep 10 # زيادة وقت الانتظار لضمان بدء الخادم
-          curl -f http://localhost:3000 || { echo "فشل التحقق من الخادم"; exit 1; }
-          echo "تم التحقق من تشغيل الخادم بنجاح!"
+          SERVER_PID=$!
+          sleep 15 # زيادة وقت الانتظار لضمان بدء الخادم
+          if curl -f http://localhost:3000; then
+            echo "تم التحقق من تشغيل الخادم بنجاح!"
+          else
+            echo "فشل التحقق من الخادم"
+            kill $SERVER_PID
+            exit 1
+          fi
+          kill $SERVER_PID
+        working-directory: ${{ env.ROOT_DIR }}
 
-      # 9. النشر على Vercel
+      # 11. النشر على Vercel
       - name: النشر على Vercel
-        run: npx vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
+        run: npx vercel deploy --prod --token ${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        working-directory: ${{ env.ROOT_DIR }}
