@@ -4,6 +4,7 @@ import hashlib
 import time
 from datetime import datetime, timedelta
 import logging
+import subprocess
 
 # إعداد ملف السجل
 logging.basicConfig(filename='repo_manager.log', level=logging.INFO,
@@ -14,7 +15,7 @@ class RepositoryManager:
         self.repo_path = repo_path
         self.organized_dir = os.path.join(repo_path, "Organized")
         self.old_files_threshold = 90  # Adjust this value based on your requirements
-        
+
     def calculate_file_hash(self, file_path):
         """حساب قيمة الهاش للملف للكشف عن التكرارات"""
         hash_md5 = hashlib.md5()
@@ -80,107 +81,31 @@ class RepositoryManager:
                             logging.error(f"خطأ أثناء حذف {file_path}: {str(e)}")
 
     def organize_files(self):
-        """ترتيب الملفات في مجلدات حسب النوع"""
+        """تنظيم الملفات بناءً على أنواعها"""
         extensions_folders = self.create_directory_structure()
         
         for root, _, files in os.walk(self.repo_path):
             for filename in files:
                 file_path = os.path.join(root, filename)
-                if os.path.isfile(file_path) and not file_path.startswith(self.organized_dir):
+                if os.path.isfile(file_path):
                     file_ext = os.path.splitext(filename)[1].lower()
-                    destination_folder = 'Others'
-                    
+                    moved = False
                     for folder, extensions in extensions_folders.items():
                         if file_ext in extensions:
-                            destination_folder = folder
+                            target_path = os.path.join(self.organized_dir, folder, filename)
+                            shutil.move(file_path, target_path)
+                            logging.info(f"تم نقل الملف: {file_path} إلى {target_path}")
+                            moved = True
                             break
-                    
-                    destination_path = os.path.join(self.organized_dir, destination_folder, filename)
-                    try:
-                        shutil.move(file_path, destination_path)
-                        logging.info(f"تم نقل {filename} إلى {destination_folder}")
-                    except Exception as e:
-                        logging.error(f"خطأ أثناء نقل {filename}: {str(e)}")
+                    if not moved:
+                        target_path = os.path.join(self.organized_dir, 'Others', filename)
+                        shutil.move(file_path, target_path)
+                        logging.info(f"تم نقل الملف: {file_path} إلى {target_path}")
 
-    def check_issues(self):
-        """التحقق من المشاكل المحتملة"""
-        issues = []
-        
-        # التحقق من الملفات الكبيرة جدًا (> 100MB)
-        size_limit = 100 * 1024 * 1024  # Adjust the size limit if needed
-        for root, _, files in os.walk(self.repo_path):
-            for filename in files:
-                file_path = os.path.join(root, filename)
-                if os.path.getsize(file_path) > size_limit:
-                    issues.append(f"ملف كبير جدًا: {file_path}")
-                
-        # التحقق من المجلدات الفارغة
-        for root, dirs, _ in os.walk(self.repo_path):
-            for dir_name in dirs:
-                dir_path = os.path.join(root, dir_name)
-                if not os.listdir(dir_path):
-                    issues.append(f"مجلد فارغ: {dir_path}")
-        
-        return issues
-
-    def manage_versions(self):
-        """تنظيم الإصدارات"""
-        version_pattern = r"v(\d+\.\d+)"  # Update this pattern if your versions differ
-        version_files = {}
-        
-        for root, _, files in os.walk(self.repo_path):
-            for filename in files:
-                import re
-                match = re.search(version_pattern, filename)
-                if match:
-                    version = match.group(1)
-                    base_name = re.sub(version_pattern, "", filename).strip()
-                    if base_name not in version_files:
-                        version_files[base_name] = []
-                    version_files[base_name].append((version, os.path.join(root, filename)))
-        
-        # الاحتفاظ بأحدث إصدار فقط
-        for base_name, versions in version_files.items():
-            if len(versions) > 1:
-                versions.sort(reverse=True)  # ترتيب تنازلي
-                for version, file_path in versions[1:]:  # حذف كل الإصدارات القديمة
-                    try:
-                        os.remove(file_path)
-                        logging.info(f"تم حذف الإصدار القديم: {file_path}")
-                    except Exception as e:
-                        logging.error(f"خطأ أثناء حذف الإصدار {file_path}: {str(e)}")
-
-    def run(self):
-        """تشغيل جميع العمليات"""
-        logging.info("بدء عملية إدارة المستودع")
-        
-        print("1. حذف الملفات المتكررة...")
-        self.remove_duplicates()
-        
-        print("2. حذف الملفات القديمة...")
-        self.remove_old_files()
-        
-        print("3. تنظيم الملفات...")
-        self.organized_dir = os.path.join(self.repo_path, "Organized")
-        self.organize_files()
-        
-        print("4. التحقق من المشاكل...")
-        issues = self.check_issues()
-        if issues:
-            print("المشاكل المكتشفة:")
-            for issue in issues:
-                print(f"- {issue}")
-                logging.warning(issue)
-        else:
-            print("لا توجد مشاكل")
-        
-        print("5. إدارة الإصدارات...")
-        self.manage_versions()
-        
-        logging.info("اكتملت عملية إدارة المستودع")
-        print("تمت العملية بنجاح! تحقق من ملف repo_manager.log للحصول على التفاصيل")
-
-if __name__ == "__main__":
-    repo_path = input("Enter the path to your repo: ")
-    manager = RepositoryManager(repo_path)
-    manager.run()
+    def update_repository(self):
+        """تحديث مستودع Git"""
+        try:
+            logging.info(f"تحديث المستودع في المسار: {self.repo_path}")
+            subprocess.run(["git", "-C", self.repo_path, "pull"], check=True)
+        except subprocess.CalledProcessError as e:
+            logging.error(f"فشل في تحديث المستودع: {e}")
