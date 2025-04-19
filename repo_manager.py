@@ -13,7 +13,7 @@ class RepositoryManager:
     def __init__(self, repo_path):
         self.repo_path = repo_path
         self.organized_dir = os.path.join(repo_path, "Organized")
-        self.old_files_threshold = 90  # الأيام التي تعتبر بعدها الملفات قديمة
+        self.old_files_threshold = 90  # Adjust this value based on your requirements
         
     def calculate_file_hash(self, file_path):
         """حساب قيمة الهاش للملف للكشف عن التكرارات"""
@@ -32,6 +32,9 @@ class RepositoryManager:
             'Code': ['.py', '.java', '.cpp', '.js'],
             'Others': []
         }
+        
+        # Add or update your project's specific file types here
+        extensions_folders['ProjectScripts'] = ['.sh', '.bat']  # Example addition
         
         for folder in extensions_folders.keys():
             folder_path = os.path.join(self.organized_dir, folder)
@@ -104,7 +107,7 @@ class RepositoryManager:
         issues = []
         
         # التحقق من الملفات الكبيرة جدًا (> 100MB)
-        size_limit = 100 * 1024 * 1024  # 100MB
+        size_limit = 100 * 1024 * 1024  # Adjust the size limit if needed
         for root, _, files in os.walk(self.repo_path):
             for filename in files:
                 file_path = os.path.join(root, filename)
@@ -122,7 +125,7 @@ class RepositoryManager:
 
     def manage_versions(self):
         """تنظيم الإصدارات"""
-        version_pattern = r"v(\d+\.\d+)"
+        version_pattern = r"v(\d+\.\d+)"  # Update this pattern if your versions differ
         version_files = {}
         
         for root, _, files in os.walk(self.repo_path):
@@ -178,7 +181,6 @@ class RepositoryManager:
         print("تمت العملية بنجاح! تحقق من ملف repo_manager.log للحصول على التفاصيل")
 
 if __name__ == "__main__":
-    repo_path = input(" https://github.com/Ze0ro99/PiMetaConnect ")
+    repo_path = input("Enter the path to your repo: ")
     manager = RepositoryManager(repo_path)
     manager.run()
-  python repo_manager.py
