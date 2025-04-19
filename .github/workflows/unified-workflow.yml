@@ -1,0 +1,121 @@
+name: Unified Workflow
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/*'
+      - 'release/*'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Manually trigger a specific task"
+        required: false
+  schedule:
+    - cron: '0 0 * * 0'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+env:
+  NODE_VERSION: '20'
+  FRONTEND_DIR: './frontend'
+  BACKEND_DIR: './backend'
+  BUILD_DIR: './frontend/build'
+
+jobs:
+  setup-environment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            ${{ env.FRONTEND_DIR }}/package-lock.json
+            ${{ env.BACKEND_DIR }}/package-lock.json
+
+      - name: Verify Secrets
+        run: |
+          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then echo "VERCEL_TOKEN is missing"; exit 1; fi
+          if [ -z "${{ secrets.MONGO_URI }}" ]; then echo "MONGO_URI is missing"; exit 1; fi
+
+  build-and-test:
+    needs: setup-environment
+    strategy:
+      matrix:
+        component: [frontend, backend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Dependencies
+        run: |
+          cd ${{ env[matrix.component == 'frontend' ? 'FRONTEND_DIR' : 'BACKEND_DIR'] }}
+          npm ci
+
+      - name: Run Tests
+        run: |
+          cd ${{ env[matrix.component == 'frontend' ? 'FRONTEND_DIR' : 'BACKEND_DIR'] }}
+          npm test
+
+  static-site-deploy:
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Frontend
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm run build
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ${{ env.BUILD_DIR }}
+
+  vercel-deploy:
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Vercel
+        run: npx vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
+
+  terraform-automation:
+    needs: setup-environment
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Terraform Automation
+        uses: CloudNation-nl/cn-terragrunt-github-actions@v0.1
+        with:
+          tf_actions: apply
+          tf_actions_binary: terragrunt
+          tf_actions_version: latest
+          tg_actions_version: latest
+          tf_actions_cli_credentials_hostname: app.terraform.io
+          tf_actions_cli_credentials_token: ${{ secrets.TF_CLI_TOKEN }}
+          tf_actions_working_dir: .
+          tf_actions_fmt_write: true
+
+  notify-on-failure:
+    needs: [setup-environment, build-and-test, static-site-deploy, vercel-deploy, terraform-automation]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Failure
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_TITLE: "Workflow Failure"
+          SLACK_MESSAGE: "Workflow failed for ${{ github.repository }} on commit ${{ github.sha }}. Check: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          SLACK_COLOR: danger
