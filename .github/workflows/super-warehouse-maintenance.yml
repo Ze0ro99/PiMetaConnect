@@ -12,21 +12,21 @@ on:
 jobs:
   build-and-lint:
     runs-on: ubuntu-latest
-    timeout-minutes: 30 # Add timeout to prevent hanging jobs
+    timeout-minutes: 30
 
     steps:
       # Checkout the repository
       - name: Checkout code
-        uses: actions/checkout@v4 # Updated to latest version
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 1 # Shallow clone for performance
+          fetch-depth: 1
 
       # Set up Python with caching
       - name: Set up Python
-        uses: actions/setup-python@v5 # Updated to latest version
+        uses: actions/setup-python@v5
         with:
           python-version: '3.9'
-          cache: 'pip' # Cache pip dependencies
+          cache: 'pip'
 
       # Install Python dependencies
       - name: Install Python dependencies
@@ -34,24 +34,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install pylint flask
 
-      # Run Python linting with detailed error handling
+      # Run Python linting
       - name: Run Python linting
         run: |
           pylint ./backend/Backend/api.py --exit-zero || { echo "Python linting failed for api.py"; exit 1; }
           pylint ./repo_manager.py --exit-zero || { echo "Python linting failed for repo_manager.py"; exit 1; }
 
-      # Set up Node.js with caching
+      # Set up Node.js (removed cache if lock file is not guaranteed)
       - name: Set up Node.js
-        uses: actions/setup-node@v4 # Updated to latest version
+        uses: actions/setup-node@v4
         with:
           node-version: '16'
-          cache: 'npm' # Cache npm dependencies
 
       # Install Node.js dependencies
       - name: Install Node.js dependencies
-        run: npm ci # Use npm ci for faster, deterministic installs
+        run: npm install # Fallback to npm install if package-lock.json is not present
 
-      # Run ESLint with detailed error handling
+      # Run ESLint
       - name: Run ESLint
         run: |
           npx eslint ./Frontend-App.js --max-warnings=0 || { echo "ESLint failed"; exit 1; }
@@ -65,12 +64,12 @@ jobs:
             echo "Shell script not found: ./git-clone-automation.sh"
           fi
 
-      # Validate YAML syntax with custom configuration
+      # Validate YAML syntax
       - name: Validate YAML files
-        uses: ibiqlik/action-yamllint@v3 # Updated to latest version
+        uses: ibiqlik/action-yamllint@v3
         with:
-          config_file: .yamllint.yml # Use a custom configuration file
-          strict: true # Enforce stricter linting
+          config_file: .yamllint.yml
+          strict: true
           format: colored
 
       # Validate CSS syntax
@@ -104,9 +103,9 @@ jobs:
             exit 1
           fi
 
-      # Notify on failure (advanced feature)
+      # Notify on failure (only for pull requests)
       - name: Notify on failure
-        if: failure()
+        if: failure() && github.event_name == 'pull_request'
         uses: actions/github-script@v6
         with:
           script: |
@@ -115,5 +114,19 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
+              body: message
+            });
+
+      # Create issue on failure for push events
+      - name: Create issue on failure for push
+        if: failure() && github.event_name == 'push'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const message = 'Super Warehouse Maintenance workflow failed on push to main! Check the logs for details.';
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Workflow Failure: Super Warehouse Maintenance',
               body: message
             });
