@@ -1,7 +1,49 @@
 {
+  "name": "pimetaconnect-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for the PiMetaConnect project, a web application that uses React for building user interfaces.",
+  "main": "index.js",
+  "type": "module",
   "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write .",
-    "test": "jest"
-  }
+    "format": "prettier --write ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ze0ro99/PiMetaConnect.git"
+  },
+  "keywords": [
+    "React",
+    "Frontend",
+    "Web Application",
+    "PiMetaConnect"
+  ],
+  "author": "Ze0ro99",
+  "license": "MIT",
+  "dependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-scripts": "^5.0.1"
+  },
+  "devDependencies": {
+    "eslint": "^8.40.0",
+    "eslint-config-react-app": "^7.0.0",
+    "eslint-plugin-import": "^2.28.0",
+    "eslint-plugin-jsx-a11y": "^6.7.1",
+    "eslint-plugin-react": "^7.32.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "prettier": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "bugs": {
+    "url": "https://github.com/Ze0ro99/PiMetaConnect/issues"
+  },
+  "homepage": "https://github.com/Ze0ro99/PiMetaConnect#readme"
 }
