@@ -5,7 +5,7 @@ import PiPaymentButton from './components/PiPaymentButton';
 function App() {
   return (
     <div className="App">
-      <h1>Welcome to PiHub</h1>
+      <h1>Welcome to PiMetaConnect</h1>
       <PiLoginButton />
       <PiPaymentButton />
     </div>
@@ -14,20 +14,6 @@ function App() {
 
 export default App;
 
- PiLoginButton.jsimport { Pi } from '@pihq/pi-web-sdk';
-
-const pi = Pi.init({ version: '2.0', sandbox: true });
-
-export default function PiLoginButton() {
-  const handleLogin = async () => {
-    try {
-      const auth = await pi.authenticate();
-      alert(`Welcome, ${auth.user.username}!`);
-    } catch (error) {
-      console.error('Login failed', error);
-    }
-  };
-
-  return <button onClick={handleLogin}>Login with Pi</button>;
-}
-npm install 
+// Ensure the following component files are linted and valid
+// components/PiLoginButton.js
+// components/PiPaymentButton.js
