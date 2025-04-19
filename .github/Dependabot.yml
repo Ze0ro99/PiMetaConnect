@@ -1,38 +1,33 @@
 version: 2
 updates:
-  # تحديثات npm
+  # Keep npm dependencies up-to-date
   - package-ecosystem: "npm"
-    directory: "/"
+    directory: "/" # Location of package.json
     schedule:
-      interval: "daily"  # التحقق يوميًا
-    # إضافة خيارات لتجنب تعارضات الإصدارات
-    allow:
-      - dependency-name: "*"  # السماح بجميع الحزم
-        dependency-type: "all"  # التبعيات العادية والتطويرية
-    # تجاهل بعض الحزم إذا لزم الأمر
+      interval: "daily"
     ignore:
-      - dependency-name: "eslint"  # تجاهل eslint لتجنب التعارض
-        versions: ["8.x.x"]  # تجاهل الإصدار 8.x.x
-      - dependency-name: "@typescript-eslint/parser"
-        versions: ["4.x.x"]  # تجاهل الإصدار 4.x.x
+      - dependency-name: "react" # Example: Add dependencies to ignore if needed
+      - dependency-name: "express"
+    commit-message:
+      prefix: "build"
 
-  # تحديثات Docker
-  - package-ecosystem: "docker"
-    directory: "/"
+  # Keep Python dependencies up-to-date
+  - package-ecosystem: "pip"
+    directory: "/backend" # Location of requirements.txt
     schedule:
-      interval: "weekly"  # التحقق أسبوعيًا
+      interval: "daily"
+    commit-message:
+      prefix: "chore"
 
-  # تحديثات GitHub Actions
+  # Keep GitHub Actions up-to-date
   - package-ecosystem: "github-actions"
-    directory: "/"
+    directory: "/" # Location of .github/workflows
     schedule:
-      interval: "weekly"  # التحقق أسبوعيًا
-    # إضافة خيارات لتجنب تعارضات الإصدارات في GitHub Actions
-    allow:
-      - dependency-name: "*"
-        dependency-type: "all"
+      interval: "daily"
+    commit-message:
+      prefix: "chore"
+
+  # Example of ignoring GitHub Actions dependencies if needed
     ignore:
-      - dependency-name: "actions/setup-node"
-        versions: ["2.x.x"]  # تجاهل الإصدار 2.x.x
       - dependency-name: "actions/checkout"
-        versions: ["2.x.x"]  # تجاهل الإصدار 2.x.x
+      - dependency-name: "actions/setup-node"
