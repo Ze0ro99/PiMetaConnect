@@ -36,7 +36,7 @@ clone_repo() {
         git clone "$url" "$destination"
     fi
     
-    if [ $? -eq 0 ]; then
+    if git clone "$url" "$destination"; then
         echo -e "${GREEN}Successfully cloned/updated repository to $destination${NC}"
     else
         echo -e "${RED}Failed to clone/update repository${NC}"
@@ -57,7 +57,7 @@ check_git
 echo "Select clone method:"
 echo "1) HTTPS (${HTTPS_URL})"
 echo "2) SSH (${SSH_URL})"
-read -p "Enter your choice (1 or 2): " choice
+read -r -p "Enter your choice (1 or 2): " choice
 
 # Process user choice
 case $choice in
@@ -72,4 +72,3 @@ case $choice in
         exit 1
         ;;
 esac
-./git-clone-automation.sh
