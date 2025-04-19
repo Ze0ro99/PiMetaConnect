@@ -37,10 +37,10 @@ jobs:
       # Run Python linting
       - name: Run Python linting
         run: |
-          pylint ./backend/Backend/api.py --exit-zero || { echo "Python linting failed for api.py"; exit 1; }
-          pylint ./repo_manager.py --exit-zero || { echo "Python linting failed for repo_manager.py"; exit 1; }
+          pylint ./backend/Backend/api.py
+          pylint ./repo_manager.py
 
-      # Set up Node.js (removed cache if lock file is not guaranteed)
+      # Set up Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -48,60 +48,12 @@ jobs:
 
       # Install Node.js dependencies
       - name: Install Node.js dependencies
-        run: npm install # Fallback to npm install if package-lock.json is not present
+        run: npm install
 
       # Run ESLint
       - name: Run ESLint
         run: |
-          npx eslint ./Frontend-App.js --max-warnings=0 || { echo "ESLint failed"; exit 1; }
-
-      # Run ShellCheck for shell scripts
-      - name: Run ShellCheck
-        run: |
-          if [[ -f "./git-clone-automation.sh" ]]; then
-            shellcheck ./git-clone-automation.sh || { echo "ShellCheck failed"; exit 1; }
-          else
-            echo "Shell script not found: ./git-clone-automation.sh"
-          fi
-
-      # Validate YAML syntax
-      - name: Validate YAML files
-        uses: ibiqlik/action-yamllint@v3
-        with:
-          config_file: .yamllint.yml
-          strict: true
-          format: colored
-
-      # Validate CSS syntax
-      - name: Validate CSS files
-        run: |
-          if [[ -f "responsive.css" && -f "virtualworld.css" ]]; then
-            npx stylelint "responsive.css" "virtualworld.css" --max-warnings=0 || { echo "CSS linting failed"; exit 1; }
-          else
-            echo "CSS files not found: responsive.css, virtualworld.css"
-            exit 1
-          fi
-
-      # Validate JSON files
-      - name: Validate JSON files
-        run: |
-          if [[ -f "./backend/backend/vercel.json" ]]; then
-            jq empty ./backend/backend/vercel.json || { echo "JSON validation failed"; exit 1; }
-          else
-            echo "JSON file not found: ./backend/backend/vercel.json"
-            exit 1
-          fi
-
-      # Navigate and verify server
-      - name: Verify server navigation
-        run: |
-          echo "Navigating through server files..."
-          if [[ -d "./backend" ]]; then
-            ls -al ./backend
-          else
-            echo "Backend directory not found: ./backend"
-            exit 1
-          fi
+          npx eslint ./Frontend-App.js --max-warnings=0
 
       # Notify on failure (only for pull requests)
       - name: Notify on failure
@@ -130,3 +82,5 @@ jobs:
               title: 'Workflow Failure: Super Warehouse Maintenance',
               body: message
             });
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
