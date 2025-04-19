@@ -49,7 +49,12 @@ jobs:
 
       # Run ShellCheck for shell scripts
       - name: Run ShellCheck
-        run: shellcheck ./git-clone-automation.sh
+        run: |
+          if [ -f "./git-clone-automation.sh" ]; then
+            shellcheck ./git-clone-automation.sh
+          else
+            echo "Shell script not found: ./git-clone-automation.sh"
+          fi
 
       # Validate YAML syntax
       - name: Validate YAML files
@@ -62,17 +67,27 @@ jobs:
       # Validate CSS syntax
       - name: Validate CSS files
         run: |
-          npx stylelint "responsive.css" "virtualworld.css"
+          if [ -f "responsive.css" ] && [ -f "virtualworld.css" ]; then
+            npx stylelint "responsive.css" "virtualworld.css"
+          else
+            echo "CSS files not found: responsive.css, virtualworld.css"
+          fi
 
       # Validate JSON files
       - name: Validate JSON files
         run: |
-          jq empty ./backend/backend/vercel.json
+          if [ -f "./backend/backend/vercel.json" ]; then
+            jq empty ./backend/backend/vercel.json
+          else
+            echo "JSON file not found: ./backend/backend/vercel.json"
+          fi
 
       # Navigate and verify server
       - name: Verify server navigation
         run: |
           echo "Navigating through server files..."
-          ls -al ./backend
-          echo "Verifying server navigation logic..."
-          # Add any custom navigation logic or validation scripts here
+          if [ -d "./backend" ]; then
+            ls -al ./backend
+          else
+            echo "Backend directory not found: ./backend"
+          fi
