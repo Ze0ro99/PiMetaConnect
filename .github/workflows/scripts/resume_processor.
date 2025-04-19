@@ -1,0 +1,11 @@
+import os
+
+def process_resume(file_path):
+    print(f"Processing resume: {file_path}")
+    # Add resume processing logic here
+
+if __name__ == "__main__":
+    resumes_directory = "resumes/"
+    for file_name in os.listdir(resumes_directory):
+        if file_name.endswith(".pdf"):
+            process_resume(os.path.join(resumes_directory, file_name))
