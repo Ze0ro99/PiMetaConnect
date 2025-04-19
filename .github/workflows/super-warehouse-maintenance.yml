@@ -16,6 +16,9 @@ jobs:
   lint-python:
     name: Lint Python Code
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10']
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -25,7 +28,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: ${{ matrix.python-version }}
           cache: 'pip'
 
       - name: Install dependencies
@@ -35,11 +38,14 @@ jobs:
 
       - name: Run Python linting
         run: |
-          pylint ./backend/**/*.py ./repo_manager.py
+          pylint ./backend/**/*.py ./repo_manager.py ./scripts/**/*.py
 
   lint-node:
     name: Lint Node.js Code
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['14', '16', '18']
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -49,18 +55,21 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
       - name: Run ESLint
-        run: npx eslint ./frontend/**/*.js --max-warnings=0
+        run: npx eslint ./frontend/**/*.js ./backend/**/*.js --max-warnings=0
 
   build:
     name: Build Application
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['16', '18']
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -70,7 +79,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
       - name: Install dependencies
@@ -101,6 +110,8 @@ jobs:
       - name: Create Issue on Failure for Push
         if: github.event_name == 'push'
         uses: actions/github-script@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           script: |
             const message = 'Super Warehouse Maintenance workflow failed on push to main! Check the logs for details.';
