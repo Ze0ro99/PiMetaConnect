@@ -1,23 +1,28 @@
 {
-  "name": "metaconnect",
+  "name": "pimetaconnect",
   "version": "1.0.0",
-  "description": "Metaconnect هو مشروع لتطوير تطبيق ويب يستخدم Express وMongoose لإنشاء واجهة برمجة التطبيقات (API) تدعم عمليات CRUD على بيانات المستخدمين.",
+  "description": "PiMetaConnect is a web application that uses Express and Mongoose to create APIs supporting CRUD workflows for user data.",
   "main": "index.js",
+  "type": "commonjs",
   "scripts": {
     "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon index.js"
+    "test": "jest",
+    "dev": "nodemon index.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write ."
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Ze0ro99/metaconnect.git"
+    "url": "https://github.com/Ze0ro99/PiMetaConnect.git"
   },
   "keywords": [
-    "تطبيق ويب",
+    "Web Application",
     "API",
     "Express",
     "Mongoose",
-    "CRUD"
+    "CRUD",
+    "RESTful API"
   ],
   "author": "Ze0ro99",
   "license": "MIT",
@@ -27,6 +32,19 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.9",
-    "eslint": "^9.18.0"
-  }
+    "eslint": "^9.18.0",
+    "jest": "^29.0.0",
+    "prettier": "^3.0.0",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-import": "^2.28.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^6.1.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "bugs": {
+    "url": "https://github.com/Ze0ro99/PiMetaConnect/issues"
+  },
+  "homepage": "https://github.com/Ze0ro99/PiMetaConnect#readme"
 }
