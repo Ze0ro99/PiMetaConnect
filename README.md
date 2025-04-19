@@ -1,52 +1,47 @@
-<div align="center">
-  <img src="assets/icons/app_icon_192x192.png" alt="PiMetaConnect Logo" width="150"/>
-  <h1>PiMetaConnect</h1>
-  <p>An application integrating metaverse and virtual reality technologies with digital payments via the Pi Network</p>
+#!/bin/bash
 
-  <p>
-    <a href="https://github.com/Ze0ro99/PiMetaConnect/actions/workflows/ci-cd.yml">
-      <img src="https://github.com/Ze0ro99/PiMetaConnect/actions/workflows/ci-cd.yml/badge.svg" alt="CI/CD Status"/>
-    </a>
-    <a href="https://github.com/Ze0ro99/PiMetaConnect/blob/main/LICENSE-MIT.txt">
-      <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
-    </a>
-    <a href="https://pi-meta-connect.vercel.app">
-      <img src="https://img.shields.io/badge/Deployed-Vercel-brightgreen" alt="Deployed on Vercel"/>
-    </a>
-    <a href="https://ze0ro99.github.io/PiMetaConnect">
-      <img src="https://img.shields.io/badge/GitHub-Pages-blue" alt="GitHub Pages"/>
-    </a>
-  </p>
-</div>
+# Enhanced Script for Managing App Icons and README Update
 
----
+# Function to create a directory if it doesn't exist
+create_directory() {
+  local dir_path=$1
+  if [ ! -d "$dir_path" ]; then
+    echo "Creating directory: $dir_path"
+    mkdir -p "$dir_path" || { echo "Error: Failed to create directory $dir_path"; exit 1; }
+  else
+    echo "Directory $dir_path already exists."
+  fi
+}
 
-## 📖 Overview
+# Function to move app icons to the target directory
+move_app_icons() {
+  local target_dir=$1
+  echo "Moving app icons to $target_dir..."
+  for icon in app_icon_*.png; do
+    if [ -f "$icon" ]; then
+      mv "$icon" "$target_dir" || { echo "Error: Failed to move $icon"; exit 1; }
+    else
+      echo "Warning: Icon $icon not found in the current directory."
+    fi
+  done
+}
 
-**PiMetaConnect** is an innovative application aimed at integrating metaverse and virtual reality technologies with digital payments using the Pi Network. This project is voluntarily developed by independent developers to support the Pi Network community and provide a seamless and secure user experience.
+# Function to update the README file with an App Icons section
+update_readme() {
+  local readme_file="README.md"
+  echo "Updating $readme_file with App Icons section..."
+  
+  # Create README file if it doesn't exist
+  if [ ! -f "$readme_file" ]; then
+    echo "$readme_file not found. Creating a new one."
+    touch "$readme_file"
+  fi
 
-### 🎯 Goals
-- Provide a secure platform for login and payments using Pi currency.
-- Enhance user experience with an intuitive interface.
-- Support future integrations with apps like Google Drive and Dropbox.
+  # Backup the existing README file
+  cp "$readme_file" "${readme_file}.bak"
 
----
-
-## ✨ Features
-
-| Feature                | Description                                                                 |
-|------------------------|-----------------------------------------------------------------------------|
-| **Secure Login**       | Login using Pi Network SDK for enhanced security.                          |
-| **Personal Dashboard** | User-friendly interface for managing user settings.                        |
-| **Digital Payments**   | Support for payments using Pi currency within the app.                     |
-| **Multi-language Support** | User interface available in English and Arabic.                        |
-| **Security & Privacy** | Advanced security features using blockchain to protect user data.          |
-
-### 🚀 Future Features
-- **Instant Messaging**: Support for text, voice, and video chat.
-- **File Sharing**: Support for sharing multiple file types.
-- **App Integrations**: Support for integration with Google Drive and Dropbox.
-- **Task Management**: Integrated calendar to track events and tasks.
+  # Append App Icons section to the README file
+  cat >> "$readme_file" << 'EOF'
 
 ---
 
@@ -66,31 +61,13 @@ Below are the app icons for **PiMetaConnect** in various sizes, ready for use in
 | 512x512       | <img src="assets/icons/app_icon_512x512.png" alt="App Icon 512x512" width="512"/> |
 | 1024x1024     | <img src="assets/icons/app_icon_1024x1024.png" alt="App Icon 1024x1024" width="512"/> |
 
----
+EOF
+  echo "App Icons section added to $readme_file."
+}
 
-## 🔗 Blockchain Technology
-
-**PiMetaConnect** leverages blockchain technology through the Pi Network to enhance security and transparency in transactions. Key features include:
-
-- **Decentralization**: Data and transactions are stored in a decentralized manner to reduce the risk of breaches.
-- **Digital Payments**: Seamless payments using Pi currency within the app.
-- **Transparency**: All transactions are recorded on the Pi Network, providing a permanent and reliable record.
-
----
-
-## 🛠️ System Requirements
-
-- **Node.js**: Version 20 or higher.
-- **MongoDB**: Database for storing user data and transactions.
-- **Blockchain Network**: Pi Network (Sandbox mode for development, Mainnet for production).
-- **Vercel CLI**: For deployment to Vercel.
-- **GitHub Actions**: For setting up CI/CD.
-
----
-
-## 📦 Setup Instructions
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/Ze0ro99/PiMetaConnect.git
-cd PiMetaConnect
+# Main execution flow
+echo "Starting script execution..."
+create_directory "assets/icons"
+move_app_icons "assets/icons"
+update_readme
+echo "Script execution completed."
