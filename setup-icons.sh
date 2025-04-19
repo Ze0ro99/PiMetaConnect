@@ -1,38 +1,7 @@
-#!/bin/bash
-
-# Step 1: Create the assets/icons directory if it doesn't exist
-echo "Creating assets/icons directory..."
-mkdir -p assets/icons
-
-# Step 2: Move the app icons to assets/icons
-# Assuming the icons are in the current directory
-echo "Moving app icons to assets/icons..."
-for icon in app_icon_*.png; do
-  if [ -f "$icon" ]; then
-    mv "$icon" assets/icons/
-  else
-    echo "Warning: Icon $icon not found in the current directory. Please ensure the icons are present."
-  fi
-done
-
-# Step 3: Update README.md with the App Icons section
-echo "Updating README.md with App Icons section..."
-
-# Check if README.md exists, if not create it
-if [ ! -f README.md ]; then
-  echo "README.md not found, creating a new one..."
-  touch README.md
-fi
-
-# Backup the existing README.md
-cp README.md README.md.bak
-
-# Write the updated README.md content
-cat > README.md << 'EOF'
 <div align="center">
   <img src="assets/icons/app_icon_192x192.png" alt="PiMetaConnect Logo" width="150"/>
   <h1>PiMetaConnect</h1>
-  <p>An application integrating metaverse and virtual reality technologies with digital payments via the Pi Network</p>
+  <p>An application integrating metaverse and virtual reality technologies with digital payments via the Pi Network.</p>
 
   <p>
     <a href="https://github.com/Ze0ro99/PiMetaConnect/actions/workflows/ci-cd.yml">
@@ -83,8 +52,6 @@ cat > README.md << 'EOF'
 
 ## 📱 App Icons
 
-Below are the app icons for **PiMetaConnect** in various sizes, ready for use in different environments (e.g., app stores or devices):
-
 | Size          | Icon                                                                   |
 |---------------|------------------------------------------------------------------------|
 | 48x48         | <img src="assets/icons/app_icon_48x48.png" alt="App Icon 48x48" width="48"/> |
@@ -96,16 +63,6 @@ Below are the app icons for **PiMetaConnect** in various sizes, ready for use in
 | 256x256       | <img src="assets/icons/app_icon_256x256.png" alt="App Icon 256x256" width="256"/> |
 | 512x512       | <img src="assets/icons/app_icon_512x512.png" alt="App Icon 512x512" width="512"/> |
 | 1024x1024     | <img src="assets/icons/app_icon_1024x1024.png" alt="App Icon 1024x1024" width="512"/> |
-
----
-
-## 🔗 Blockchain Technology
-
-**PiMetaConnect** leverages blockchain technology through the Pi Network to enhance security and transparency in transactions. Key features include:
-
-- **Decentralization**: Data and transactions are stored in a decentralized manner to reduce the risk of breaches.
-- **Digital Payments**: Seamless payments using Pi currency within the app.
-- **Transparency**: All transactions are recorded on the Pi Network, providing a permanent and reliable record.
 
 ---
 
@@ -125,3 +82,8 @@ Below are the app icons for **PiMetaConnect** in various sizes, ready for use in
 ```bash
 git clone https://github.com/Ze0ro99/PiMetaConnect.git
 cd PiMetaConnect
+```
+
+### 2. Install Dependencies
+```bash
+npm install
