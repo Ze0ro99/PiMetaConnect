@@ -1,5 +1,4 @@
----
-name: Unified Super Warehouse Maintenance
+name: Unified Super Workflow
 
 on:
   push:
@@ -9,8 +8,13 @@ on:
     branches:
       - main
 
+env:
+  NODE_VERSION: '20'
+  PYTHON_VERSION: '3.9'
+
 jobs:
-  lint-and-validate:
+  unified-workflow:
+    name: Unified Super Workflow
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -20,188 +24,90 @@ jobs:
         node-version: ['14', '16', '18']
 
     steps:
-      # Checkout the repository
-      - name: Checkout code
+      # Step 1: Checkout the repository
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
-      # Set up Python with caching
+      # Step 2: Set up Python with caching
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
 
-      # Install Python dependencies
+      # Step 3: Install Python dependencies
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pylint flask
+          if [ ! -f "./backend/requirements.txt" ]; then
+            echo -e "flask==3.1.0\npandas==1.5.3\nstellar-sdk\nrequests" > ./backend/requirements.txt
+          fi
+          if [ ! -s "./backend/requirements.txt" ]; then
+            echo "Error: requirements.txt is missing or empty" 1>&2
+            exit 1
+          fi
+          pip install -r ./backend/requirements.txt
 
-      # Run Python linting
-      - name: Run Python linting with Python ${{ matrix.python-version }}
+      # Step 4: Run Python linting
+      - name: Run Python linting
         run: |
-          if [[ -f "./backend/Backend/api.py" ]]; then
-            pylint ./backend/Backend/api.py --exit-zero || { echo "Python linting failed for api.py with Python ${{ matrix.python-version }}"; exit 1; }
-          else
-            echo "Python file not found: ./backend/Backend/api.py"
-          fi
-          if [[ -f "./repo_manager.py" ]]; then
-            pylint ./repo_manager.py --exit-zero || { echo "Python linting failed for repo_manager.py with Python ${{ matrix.python-version }}"; exit 1; }
-          else
-            echo "Python file not found: ./repo_manager.py"
-          fi
+          pylint ./backend/**/*.py ./repo_manager.py ./scripts/**/*.py || exit 1
 
-      # Set up Node.js
+      # Step 5: Set up Node.js with caching
       - name: Set up Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
+          cache: 'npm'
 
-      # Generate package-lock.json if package.json exists
-      - name: Generate package-lock.json if missing
-        run: |
-          if [[ -f "package.json" && ! -f "package-lock.json" ]]; then
-            echo "package-lock.json not found, generating..."
-            npm install
-          else
-            echo "package.json or package-lock.json already handled."
-          fi
-
-      # Install Node.js dependencies
+      # Step 6: Install Node.js dependencies
       - name: Install Node.js dependencies
         run: |
-          if [[ -f "package.json" ]]; then
+          if [ ! -f "./package-lock.json" ] && [ ! -f "./yarn.lock" ]; then
             npm install
-          else
-            echo "package.json not found, skipping Node.js dependency installation."
+            npm shrinkwrap
           fi
+          if [ ! -s "./package-lock.json" ] && [ ! -s "./yarn.lock" ]; then
+            echo "Error: Dependency lock file is missing or invalid" 1>&2
+            exit 1
+          fi
+          npm ci
 
-      # Run ESLint
-      - name: Run ESLint with Node.js ${{ matrix.node-version }}
+      # Step 7: Run ESLint
+      - name: Run ESLint
         run: |
-          if [[ -f "./Frontend-App.js" ]]; then
-            npx eslint ./Frontend-App.js --max-warnings=0 || { echo "ESLint failed with Node.js ${{ matrix.node-version }}"; exit 1; }
-          else
-            echo "JavaScript file not found: ./Frontend-App.js"
-          fi
+          npx eslint ./frontend/**/*.js ./backend/**/*.js --max-warnings=0 || exit 1
 
-      # Run ShellCheck for shell scripts
-      - name: Run ShellCheck
+      # Step 8: Validate YAML files
+      - name: Validate YAML syntax
         run: |
-          if [[ -f "./git-clone-automation.sh" ]]; then
-            shellcheck ./git-clone-automation.sh || { echo "ShellCheck failed"; exit 1; }
-          else
-            echo "Shell script not found: ./git-clone-automation.sh"
-          fi
+          yamllint .github/workflows/*.yml || exit 1
 
-      # Validate YAML syntax
-      - name: Validate YAML files
-        uses: ibiqlik/action-yamllint@v3
-        with:
-          config_file: .yamllint.yml
-          strict: true
-          format: colored
+      # Step 9: Build the application
+      - name: Build the application
+        run: npm run build
 
-      # Validate CSS syntax
-      - name: Validate CSS files
-        run: |
-          if [[ -f "responsive.css" && -f "virtualworld.css" ]]; then
-            npx stylelint "responsive.css" "virtualworld.css" --max-warnings=0 || { echo "CSS linting failed"; exit 1; }
-          else
-            echo "CSS files not found: responsive.css, virtualworld.css"
-          fi
-
-      # Validate JSON files
-      - name: Validate JSON files
-        run: |
-          if [[ -f "./backend/backend/vercel.json" ]]; then
-            jq empty ./backend/backend/vercel.json || { echo "JSON validation failed"; exit 1; }
-          else
-            echo "JSON file not found: ./backend/backend/vercel.json"
-          fi
-
-      # Navigate and verify server
-      - name: Verify server navigation
-        run: |
-          echo "Navigating through server files..."
-          if [[ -d "./backend" ]]; then
-            ls -al ./backend
-          else
-            echo "Backend directory not found: ./backend"
-          fi
-
-      # Notify on failure for pull requests
-      - name: Notify on failure (Pull Request)
-        if: failure() && github.event_name == 'pull_request'
+      # Step 10: Add failure notifications
+      - name: Notify on failure
+        if: failure()
         uses: actions/github-script@v6
         with:
           script: |
-            const message = 'Unified Super Warehouse Maintenance workflow failed! Check the logs for details.';
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: message
-            });
-
-      # Create issue on failure for push events
-      - name: Create issue on failure (Push)
-        if: failure() && github.event_name == 'push'
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const message = 'Unified Super Warehouse Maintenance workflow failed on push to main! Check the logs for details.';
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: 'Workflow Failure: Unified Super Warehouse Maintenance',
-              body: message
-            });
-
-  jekyll-build:
-    runs-on: ubuntu-latest
-    needs: lint-and-validate
-    steps:
-      # Checkout the repository
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      # Build Jekyll site using Docker
-      - name: Build Jekyll site
-        run: |
-          docker run \
-            -v ${{ github.workspace }}:/srv/jekyll \
-            -v ${{ github.workspace }}/_site:/srv/jekyll/_site \
-            jekyll/builder:latest /bin/bash -c "chmod -R 777 /srv/jekyll && jekyll build --future"
-
-      # Notify on failure for pull requests
-      - name: Notify on failure (Pull Request)
-        if: failure() && github.event_name == 'pull_request'
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const message = 'Unified Super Warehouse Maintenance (Jekyll Build) workflow failed! Check the logs for details.';
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: message
-            });
-
-      # Create issue on failure for push events
-      - name: Create issue on failure (Push)
-        if: failure() && github.event_name == 'push'
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const message = 'Unified Super Warehouse Maintenance (Jekyll Build) workflow failed on push to main! Check the logs for details.';
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: 'Workflow Failure: Unified Super Warehouse Maintenance (Jekyll Build)',
-              body: message
-            });
+            const message = `Workflow failed! Please check the logs for details: ${context.run_url}`;
+            if (github.event_name === 'pull_request') {
+              await github.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: message
+              });
+            } else {
+              await github.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: 'Workflow Failure',
+                body: message
+              });
+            }
