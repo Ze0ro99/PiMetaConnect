@@ -17,6 +17,8 @@ def connect():
         JSON response with a success message and provided data.
     """
     data = request.json
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
     return jsonify({"message": "تم الاتصال بنجاح!", "data": data})
 
 @app.route('/api/status', methods=['GET'])
@@ -30,4 +32,4 @@ def status():
     return jsonify({"message": "خدمة MetaConnect تعمل بشكل جيد!"})
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)  # Enable debugging for development
