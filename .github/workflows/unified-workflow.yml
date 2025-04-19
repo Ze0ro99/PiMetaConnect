@@ -20,7 +20,6 @@ env:
   NODE_VERSION: '20'
   FRONTEND_DIR: './frontend'
   BACKEND_DIR: './backend'
-  BUILD_DIR: './frontend/build'
 
 jobs:
   setup:
@@ -42,6 +41,14 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
+      - name: Install Dependencies for Frontend
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm ci
+
+      - name: Install Dependencies for Backend
+        working-directory: ${{ env.BACKEND_DIR }}
+        run: npm ci
+
   lint-and-test:
     needs: setup
     runs-on: ubuntu-latest
@@ -52,17 +59,26 @@ jobs:
       - name: Navigate to ${{ matrix.component }}
         run: cd ${{ env[matrix.component] }}
 
-      - name: Install Dependencies
-        run: npm ci
-
-      - name: Lint and Format Code
-        run: npm run lint:fix && npm run format
+      - name: Run Linting
+        run: npm run lint:fix
 
       - name: Run Tests
         run: npm test || echo "Tests failed."
 
-  deploy:
+  build:
     needs: lint-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Frontend
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm run build
+
+      - name: Build Backend
+        working-directory: ${{ env.BACKEND_DIR }}
+        run: echo "No specific build step for backend."
+
+  deploy:
+    needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
