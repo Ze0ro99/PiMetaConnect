@@ -1,0 +1,26 @@
+from nexus_revoluter.api import SmartContract, Wallet
+
+# Initialize wallet for PiMetaConnect users
+user_wallet = Wallet(user_id="12345", private_key="private_key")
+
+# Create and deploy a smart contract
+contract = SmartContract(
+    contract_id="pi_smart_contract",
+    parameters={'key': 'value'}
+)
+contract.deploy()
+
+# Perform a transaction using the wallet
+transaction = user_wallet.create_transaction(
+    receiver="receiver_address",
+    amount=50
+)
+
+if transaction.verify():
+    print("Transaction successful!")
+else:
+    print("Transaction failed!")
+
+# Export API for PiMetaConnect
+def get_wallet_api():
+    return user_wallet.get_api()
