@@ -34,6 +34,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          if [ ! -f "./backend/requirements.txt" ]; then
+            echo "flask==3.1.0\npandas==1.5.3\nstellar-sdk\nrequests" > ./backend/requirements.txt
+          fi
           pip install -r ./backend/requirements.txt
 
       - name: Run Python linting
@@ -59,7 +62,12 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          if [ ! -f "./package-lock.json" ] && [ ! -f "./yarn.lock" ]; then
+            npm install
+            npm shrinkwrap
+          fi
+          npm ci
 
       - name: Run ESLint
         run: npx eslint ./frontend/**/*.js ./backend/**/*.js --max-warnings=0
@@ -83,7 +91,12 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          if [ ! -f "./package-lock.json" ] && [ ! -f "./yarn.lock" ]; then
+            npm install
+            npm shrinkwrap
+          fi
+          npm ci
 
       - name: Run Build
         run: npm run build
