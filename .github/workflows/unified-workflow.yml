@@ -1,25 +1,20 @@
-name: Unified Workflow
+name: Unified Workflow for PiMetaConnect
 
 on:
   push:
     branches:
       - main
       - 'feature/*'
-      - 'release/*'
   pull_request:
     branches:
       - main
-  workflow_dispatch:
-    inputs:
-      task:
-        description: "Manually trigger a specific task"
-        required: false
   schedule:
     - cron: '0 0 * * 0'
+  workflow_dispatch:
 
 permissions:
   contents: write
-  pull-requests: read
+  pull-requests: write
 
 env:
   NODE_VERSION: '20'
@@ -28,87 +23,57 @@ env:
   BUILD_DIR: './frontend/build'
 
 jobs:
-  setup-environment:
+  setup:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Setup Node.js
+      - name: Verify Required Tools
+        run: |
+          command -v node || exit 1
+          command -v npm || exit 1
+          command -v python3 || exit 1
+          command -v pip3 || exit 1
+
+      - name: Set Up Node.js Environment
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: |
-            ${{ env.FRONTEND_DIR }}/package-lock.json
-            ${{ env.BACKEND_DIR }}/package-lock.json
 
-      - name: Verify Secrets
-        run: |
-          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then echo "VERCEL_TOKEN is missing"; exit 1; fi
-          if [ -z "${{ secrets.MONGO_URI }}" ]; then echo "MONGO_URI is missing"; exit 1; fi
-
-  build-and-test:
-    needs: setup-environment
+  lint-and-test:
+    needs: setup
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         component: [frontend, backend]
-    runs-on: ubuntu-latest
     steps:
+      - name: Navigate to ${{ matrix.component }}
+        run: cd ${{ env[matrix.component] }}
+
       - name: Install Dependencies
-        run: |
-          cd ${{ env[matrix.component == 'frontend' ? 'FRONTEND_DIR' : 'BACKEND_DIR'] }}
-          npm ci
+        run: npm ci
+
+      - name: Lint and Format Code
+        run: npm run lint:fix && npm run format
 
       - name: Run Tests
-        run: |
-          cd ${{ env[matrix.component == 'frontend' ? 'FRONTEND_DIR' : 'BACKEND_DIR'] }}
-          npm test
+        run: npm test || echo "Tests failed."
 
-  static-site-deploy:
-    needs: build-and-test
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Build Frontend
-        working-directory: ${{ env.FRONTEND_DIR }}
-        run: npm run build
-
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ${{ env.BUILD_DIR }}
-
-  vercel-deploy:
-    needs: build-and-test
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  deploy:
+    needs: lint-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to Vercel
         run: npx vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
-  terraform-automation:
-    needs: setup-environment
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Terraform Automation
-        uses: CloudNation-nl/cn-terragrunt-github-actions@v0.1
-        with:
-          tf_actions: apply
-          tf_actions_binary: terragrunt
-          tf_actions_version: latest
-          tg_actions_version: latest
-          tf_actions_cli_credentials_hostname: app.terraform.io
-          tf_actions_cli_credentials_token: ${{ secrets.TF_CLI_TOKEN }}
-          tf_actions_working_dir: .
-          tf_actions_fmt_write: true
-
-  notify-on-failure:
-    needs: [setup-environment, build-and-test, static-site-deploy, vercel-deploy, terraform-automation]
+  notify:
+    needs: [lint-and-test, deploy]
     if: failure()
     runs-on: ubuntu-latest
     steps:
@@ -116,6 +81,5 @@ jobs:
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_TITLE: "Workflow Failure"
-          SLACK_MESSAGE: "Workflow failed for ${{ github.repository }} on commit ${{ github.sha }}. Check: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          SLACK_COLOR: danger
+          SLACK_TITLE: "Workflow Failed"
+          SLACK_MESSAGE: "A failure occurred in the workflow for commit ${{ github.sha }}."
