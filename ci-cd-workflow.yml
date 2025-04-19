@@ -1,0 +1,35 @@
+name: Integrate External Repositories
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync-super-pi:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+      - name: Sync super-pi
+        run: |
+          git clone https://github.com/KOSASIH/super-pi.git
+          cp -r super-pi/src/* ./src/
+  sync-nexus-revoluter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+      - name: Sync nexus-revoluter
+        run: |
+          git clone https://github.com/KOSASIH/nexus-revoluter.git
+          cp -r nexus-revoluter/src/* ./src/
+  sync-pi-apps:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+      - name: Sync pi-apps
+        run: |
+          git clone https://github.com/KOSASIH/pi-apps.git
+          cp -r pi-apps/* ./apps/
