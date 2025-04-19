@@ -1,0 +1,13 @@
+# Existing workflow here...
+
+# Add a step to clone and integrate Kosasi's repository
+- name: Clone Kosasi's Repository
+  run: |
+    git clone https://github.com/KOSASIH/repository-name.git ./kosasi-repo
+    cd ./kosasi-repo
+    # Perform setup or integration steps here (e.g., install dependencies)
+
+# Add a step to execute Kosasi's repository scripts if required
+- name: Run Kosasi's Script
+  run: |
+    python ./kosasi-repo/script.py
