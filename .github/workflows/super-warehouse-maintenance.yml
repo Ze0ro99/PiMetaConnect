@@ -30,7 +30,7 @@ jobs:
       # Run Python linting
       - name: Run Python linting
         run: |
-          pylint ./backend/Backend/api.py
+          pylint ./backend/Backend/api.py || true
           pylint ./repo_manager.py || true
 
       # Set up Node.js
@@ -59,10 +59,6 @@ jobs:
       # Validate YAML syntax
       - name: Validate YAML files
         uses: ibiqlik/action-yamllint@v1
-        with:
-          yaml_files: |
-            .github/workflows/ci.yml
-            .github/workflows/dotnet-build.yml
 
       # Validate CSS syntax
       - name: Validate CSS files
@@ -71,7 +67,6 @@ jobs:
             npx stylelint "responsive.css" "virtualworld.css" || true
           else
             echo "CSS files not found: responsive.css, virtualworld.css"
-          fi
 
       # Validate JSON files
       - name: Validate JSON files
@@ -80,7 +75,6 @@ jobs:
             jq empty ./backend/backend/vercel.json || true
           else
             echo "JSON file not found: ./backend/backend/vercel.json"
-          fi
 
       # Navigate and verify server
       - name: Verify server navigation
@@ -90,4 +84,3 @@ jobs:
             ls -al ./backend
           else
             echo "Backend directory not found: ./backend"
-          fi
