@@ -1,33 +1,22 @@
 version: 2
 updates:
-  # Keep npm dependencies up-to-date
   - package-ecosystem: "npm"
-    directory: "/" # Location of package.json
+    directory: "/" # Root directory for frontend dependencies
     schedule:
       interval: "daily"
-    ignore:
-      - dependency-name: "react" # Example: Add dependencies to ignore if needed
-      - dependency-name: "express"
     commit-message:
       prefix: "build"
 
-  # Keep Python dependencies up-to-date
   - package-ecosystem: "pip"
-    directory: "/backend" # Location of requirements.txt
+    directory: "/backend" # Backend Python dependencies
     schedule:
       interval: "daily"
     commit-message:
       prefix: "chore"
 
-  # Keep GitHub Actions up-to-date
   - package-ecosystem: "github-actions"
-    directory: "/" # Location of .github/workflows
+    directory: "/" # GitHub Actions updates
     schedule:
       interval: "daily"
     commit-message:
       prefix: "chore"
-
-  # Example of ignoring GitHub Actions dependencies if needed
-    ignore:
-      - dependency-name: "actions/checkout"
-      - dependency-name: "actions/setup-node"
