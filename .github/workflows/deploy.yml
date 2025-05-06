@@ -2,6 +2,16 @@ name: Deploy to Vercel
 
 on:
   push:
+  "version": 2,
+  "public": true,
+  "builds": [
+    { "src": "public/**/*", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/privacy", "dest": "/public/privacy.html" },
+    { "src": "/terms", "dest": "/public/terms.html" }
+  ]
+}
     branches:
       - main
   pull_request:
