@@ -29,6 +29,14 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
+          always-auth: false
+          check-latest: false
+
+      - name: Ensure package-lock.json exists
+        run: |
+          if [ ! -f package-lock.json ]; then
+            npm install --package-lock-only
+          fi
 
       - name: Install dependencies
         run: npm install
@@ -81,7 +89,7 @@ jobs:
           git config user.email "action@github.com"
           git add .
           git diff --staged --quiet || git commit -m "Auto-update files and dependencies"
-          git push origin %%%%%%  # Branch name placeholder
+          git push origin git@github.com:Ze0ro99/PiMetaConnect.git
 
       - name: Build project
         run: npm run build
