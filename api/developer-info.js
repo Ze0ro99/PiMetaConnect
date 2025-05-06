@@ -1,7 +1,7 @@
 export function GET(request) {
   try {
     // استخراج معلمة 'name' من الـ URL
-    const url = new URL(request.url); // الرابط الأساسي للـ API
+    const url = new URL(request.url); https://pi-meta-connect-p0zxs7qx8-ze0ro99s-projects.vercel.app// الرابط الأساسي للـ API
     const name = url.searchParams.get('name') || 'GUEST'; // NAME: استخراج اسم المستخدم، أو "GUEST" افتراضيًا
 
     // تجميع المعلومات بشكل منسق
