@@ -3,7 +3,14 @@
   "version": "1.0.0",
   "description": "PiMetaConnect project",
   "scripts": {
-    "start": "bash setup_replit_pimeta.sh"
+    "setup": "bash scripts/setup.sh",
+    "start": "bash setup_replit_pimeta.sh",
+    "dev": "npm run setup && cd client && npm start & cd server && npm start",
+    "build": "cd client && npm run build && cd ../server && npm run build",
+    "lint": "eslint . --ext .js,.ts,.jsx,.tsx",
+    "format": "prettier --write .",
+    "test": "jest",
+    "check:pi": "node scripts/pi-integration-check.js"
   },
   "dependencies": {},
   "devDependencies": {}
