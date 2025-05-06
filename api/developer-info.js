@@ -1,7 +1,7 @@
 export function GET(request) {
   try {
     // استخراج معلمة 'name' من الـ URL
-    const url = new URL(request.url); https://pi-meta-connect-p0zxs7qx8-ze0ro99s-projects.vercel.app// الرابط الأساسي للـ API
+    const url = new URL(request.url);('https://pi-meta-connect-p0zxs7qx8-ze0ro99s-projects.vercel.app')// الرابط الأساسي للـ API'
     const name = url.searchParams.get('name') || 'GUEST'; // NAME: استخراج اسم المستخدم، أو "GUEST" افتراضيًا
 
     // تجميع المعلومات بشكل منسق
@@ -10,9 +10,9 @@ export function GET(request) {
       email: 'kamelkadah910@gmail.com', // الإيميل
       projectName: 'PiMetaConnect', // اسم المشروع
       projectId: 'prj_s6BZqMormOXqQAgtV55EZBq52aRC', // معرف Vercel - استبدله بمعرف المشروع الحقيقي (مثل prj_abc123xyz)
-      projectIdUser: 'user_pimetaconnect_001', // معرف مستخدم مرتبط بالمشروع (افتراضي، يمكنك تغييره)
+      projectIdUser: 'pimetaconnect_001', // معرف مستخدم مرتبط بالمشروع (افتراضي، يمكنك تغييره)
       url: 'https://pi-meta-connect-a0zg2ss9h-ze0ro99s-projects.vercel.app', // الرابط الأساسي للـ API (استبدله بالنطاق الحقيقي)
-      greetedUser: name, // GUEST: يتم تعيينه بناءً على NAME أو "GUEST" افتراضيًا
+      greetedUser: name, 'GOEST'// GUEST: يتم تعيينه بناءً على NAME أو "GUEST" افتراضيًا
     };
 
     // إرجاع الرد بتنسيق JSON
