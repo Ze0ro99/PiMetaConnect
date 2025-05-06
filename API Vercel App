@@ -1,0 +1,9 @@
+export function GET(request: Request) {
+https://your-vercel-app.vercel.app/api/hello.js
+
+const url = new URL(request.url);
+  const name = url.searchParams.get('PiMetaConnect)
+
+
+  return new Response('Hello from Vercel!');
+}
