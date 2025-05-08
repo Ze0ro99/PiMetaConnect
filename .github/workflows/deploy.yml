@@ -37,7 +37,6 @@ jobs:
           if [ ! -f package-lock.json ]; then
             npm install --package-lock-only
           fi
-
       - name: Install dependencies
         run: npm install
 
@@ -46,7 +45,6 @@ jobs:
           if ! npm list @vercel/speed-insights > /dev/null 2>&1; then
             npm install @vercel/speed-insights
           fi
-
       - name: Update package.json with dependencies and scripts
         run: |
           npm pkg set dependencies.next="^14.2.0"
@@ -57,44 +55,44 @@ jobs:
           npm pkg set scripts.start="next start"
           npm pkg set scripts.dev="next dev"
           npm install
-
       - name: Create Next.js layout file if missing
         run: |
           if [ ! -f app/layout.js ]; then
             mkdir -p app
             echo "import { SpeedInsights } from \"@vercel/speed-insights/next\"; export default function RootLayout({ children }) { return (<html lang=\"en\"><body>{children}<SpeedInsights /></body></html>); }" > app/layout.js
           fi
-
       - name: Create Next.js page file if missing
         run: |
           if [ ! -f app/page.js ]; then
             echo "export default function Home() { return <h1>Welcome to PiMetaConnect</h1>; }" > app/page.js
           fi
-
       - name: Create next.config.js if missing
         run: |
           if [ ! -f next.config.js ]; then
             echo "module.exports = { reactStrictMode: true, }" > next.config.js
           fi
-
       - name: Create or update vercel.json
         run: |
           if [ ! -f vercel.json ]; then
             echo "{\"version\": 2, \"public\": true, \"builds\": [{\"src\": \"public/**/*\", \"use\": \"@vercel/static\"}, {\"src\": \"api/**/*.js\", \"use\": \"@vercel/node\"}, {\"src\": \"next.config.js\", \"use\": \"@vercel/next\"}], \"routes\": [{\"src\": \"/privacy\", \"dest\": \"/public/privacy.html\"}, {\"src\": \"/terms\", \"dest\": \"/public/terms.html\"}, {\"src\": \"/api/(.*)\", \"dest\": \"/api/$1\"}, {\"src\": \"/(.*)\", \"dest\": \"/\"}]}" > vercel.json
           fi
-
       - name: Commit changes if any
         run: |
           git config user.name "GitHub Action"
           git config user.email "action@github.com"
           git add .
           git diff --staged --quiet || git commit -m "Auto-update files and dependencies"
-          git push origin git@github.com:Ze0ro99/PiMetaConnect.git
-
+          git push
       - name: Build project
         run: npm run build
 
+      - name: Install Vercel CLI if not present
+        run: |
+          if ! command -v vercel >/dev/null 2>&1; then
+            npm install -g vercel
+          fi
+
       - name: Deploy to Vercel
         env:
-          VERCEL_TOKEN: ${{ .github/workflows/deploy.yml }}
-        run: npx vercel --prod --token deploy.yml
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: npx vercel --prod --token $VERCEL_TOKEN
