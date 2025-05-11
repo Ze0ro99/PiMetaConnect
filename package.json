@@ -12,6 +12,7 @@
     "test": "jest",
     "check:pi": "node scripts/pi-integration-check.js"
   },
-  "dependencies": {},
-  "devDependencies": {}
+  "dependencies": {
+    "pi-sdk": "^0.0.16"
+  }
 }
