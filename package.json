@@ -4,14 +4,18 @@
   "description": "PiMetaConnect project",
   "scripts": {
     "setup": "bash scripts/setup.sh",
-    "start": "bash setup_replit_pimeta.sh",
-    "dev": "npm run setup && cd client && npm start & cd server && npm start",
-    "build": "cd client && npm run build && cd ../server && npm run build",
+    "start": "next start",
+    "dev": "next dev",
+    "build": "next build",
     "lint": "eslint . --ext .js,.ts,.jsx,.tsx",
     "format": "prettier --write .",
     "test": "jest",
     "check:pi": "node scripts/pi-integration-check.js"
   },
-  "dependencies": {},
-  "devDependencies": {}
+  "dependencies": {
+    "@vercel/speed-insights": "^1.0.0",
+    "next": "^14.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
 }
