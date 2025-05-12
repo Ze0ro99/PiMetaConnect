@@ -1,0 +1,17 @@
+# Remove the conflicted package-lock.json
+git rm package-lock.json
+
+# Resolve package.json conflicts manually
+# Edit package.json to keep the desired dependency versions
+
+# Regenerate package-lock.json
+npm install
+
+# Stage the resolved files
+git add package.json package-lock.json
+
+# Commit the changes
+git commit -m "Resolve package-lock.json conflict"
+
+# Verify the application
+npm run dev  # Or your relevant start command
