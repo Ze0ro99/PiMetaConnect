@@ -1,4 +1,4 @@
-https://codespaces.new/pi-apps/demo?quickstart=1
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/pi-apps/demo?quickstart=1)
 # PiMetaConnect
 
 A vibrant platform blending social media, metaverse, and NFTs to empower users and creators in the Pi Network ecosystem with Pi-powered transactions.
@@ -40,9 +40,8 @@ A vibrant platform blending social media, metaverse, and NFTs to empower users a
 - [Contribution Guide](CONTRIBUTING.md)
 - [Security Policy](SECURITY.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
-
+- https://codespaces.new/pi-apps/demo?quickstart=1
 ## Support
-
 - [Open an Issue](https://github.com/Ze0ro99/PiMetaConnect/issues/new/choose)
 - [Pi Support Portal](https://pinetwork.atlassian.net/servicedesk/customer/portal/1/group/3/create/20)
   
