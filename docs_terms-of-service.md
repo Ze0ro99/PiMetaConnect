@@ -12,4 +12,4 @@ By using PiMetaConnect, you agree to the following terms:
 - We reserve the right to update or terminate services at any time.
 
 ## Contact
-For questions or concerns: ze0ro99@example.com
+For questions or concerns: kamelkadah910@gmail.com 
