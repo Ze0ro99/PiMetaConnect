@@ -44,4 +44,8 @@ A vibrant platform blending social media, metaverse, and NFTs to empower users a
 
 - [Open an Issue](https://github.com/Ze0ro99/PiMetaConnect/issues/new/choose)
 - [Pi-apps Discussions](https://github.com/pi-apps/pi-platform-docs/discussions)
+- <a href='https://codespaces.new/pi-apps/demo?quickstart=1'><img src='https://github.com/codespaces/badge.svg' alt='Open in GitHub Codespaces' style='max-width: 100%;'></a>
+https://codespaces.new/pi-apps/demo?quickstart=1
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/pi-apps/demo?quickstart=1)
 - [Pi Support Portal](https://pinetwork.atlassian.net/servicedesk/customer/portal/1/group/3/create/20)
+  
