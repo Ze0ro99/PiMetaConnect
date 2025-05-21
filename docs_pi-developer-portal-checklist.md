@@ -17,4 +17,4 @@
 - Description: A vibrant platform blending social media, metaverse, and NFTs to empower users and creators in the Pi Network ecosystem with Pi-powered transactions.
 - Category: Social, NFT/Marketplace, Metaverse
 - Permissions: Pi Authentication, Wallet Access, Payments
-- Contact: ze0ro99@example.com
+- Contact: Kamelkadah910@gmail.com
