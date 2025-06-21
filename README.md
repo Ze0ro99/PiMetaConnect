@@ -1,47 +1,153 @@
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/pi-apps/demo?quickstart=1)
 # PiMetaConnect
 
-A vibrant platform blending social media, metaverse, and NFTs to empower users and creators in the Pi Network ecosystem with Pi-powered transactions.
+**A next-generation platform blending social media, the metaverse, and NFTs, empowered by AI-driven automation and the Pi Network.**
 
-## Features
+---
 
-- **Pi Network Integration**: Official Pi SDK for authentication, payments, and wallet access.
-- **NFT & Metaverse Ready**: Blockchain NFT contracts, Unity-based metaverse integration.
-- **Open Collaboration**: Welcomes contributors, with clear contribution and issue templates.
-- **Automation**: Scripts for setup, Testnet/Mainnet switching, and deployment.
-- **Security & Privacy**: Follows best practices for wallet security, API keys, and user data.
+## 🚀 Overview
 
-## Quick Start
+PiMetaConnect is a vibrant platform that fuses Web3 social features, metaverse experiences, and NFT utilities, all powered by Pi cryptocurrency. The project is designed for seamless automation, robust integration, and intelligent workflows—making it easier than ever to build, manage, and scale your project with the help of AI and KOSASIH automation.
 
-1. **Clone the repository**
-    ```sh
-    git clone https://github.com/Ze0ro99/PiMetaConnect.git
-    cd PiMetaConnect
-    ```
+---
 
-2. **Run the setup script**
-    ```sh
-    bash scripts/setup.sh
-    ```
+## 🌟 Key Features
 
-3. **Register App in Pi Developer Portal**
-    - Visit `pi://develop.pi` in the Pi Browser.
-    - Register both Mainnet and Testnet projects.
-    - Complete all checklist steps (hosting, wallet connection, permissions).
+- **AI-Powered Automation:**  
+  Built-in artificial intelligence modules for moderation, analytics, content generation, and workflow optimization.
+- **KOSASIH Automation Suite:**  
+  Professional scripts and shell automation for setup, maintenance, CI/CD, and notifications.  
+  Special declarations allow you to enable and customize KOSASIH-powered routines quickly.
+- **NFT & Metaverse Integration:**  
+  Complete NFT lifecycle management (mint, trade, own) and immersive virtual interactions.
+- **Secure Pi Transactions:**  
+  Automated, reliable, and fast Pi payments and rewards.
 
-4. **Start Development**
-    - Frontend: `cd client && npm start`
-    - Backend: `cd server && npm start`
-    - Blockchain: `cd blockchain && npx hardhat node`
+---
 
-## Documentation
+## 🛠️ Tech Stack
 
-- [Pi Network Integration](docs/pi-network-integration.md)
-- [Contribution Guide](CONTRIBUTING.md)
-- [Security Policy](SECURITY.md)
-- [Code of Conduct](CODE_OF_CONDUCT.md)
-- https://codespaces.new/pi-apps/demo?quickstart=1
-## Support
-- [Open an Issue](https://github.com/Ze0ro99/PiMetaConnect/issues/new/choose)
-- [Pi Support Portal](https://pinetwork.atlassian.net/servicedesk/customer/portal/1/group/3/create/20)
-  
+| Layer        | Technology                    |
+|--------------|------------------------------|
+| Backend      | Python, Shell, API           |
+| Frontend     | HTML, JavaScript, TypeScript |
+| Automation   | Shell, Python (KOSASIH)      |
+| DevOps       | Nix, GitHub Actions, Vercel  |
+| Data Science | Jupyter Notebook             |
+
+---
+
+## ⚡ Quick Start
+
+### 1. Requirements
+
+- Python 3.8+
+- Node.js 16+
+- Git, Bash
+- Pi Network SDK/API credentials
+
+### 2. Installation
+
+```bash
+git clone https://github.com/Ze0ro99/PiMetaConnect.git
+cd PiMetaConnect
+bash setup_pimeta.sh
+```
+- For Android/Termux, use:  
+  `bash setup_pimeta_termux.sh`  
+- For Replit:  
+  `bash setup_replit_pimeta.sh`
+
+The setup script will install all dependencies, configure the environment, and initialize KOSASIH and AI modules.
+
+### 3. Configuration
+
+- Copy `.env.example` to `.env` and update with your API keys and preferences.
+- Review and customize scripts in `scripts/automation/` for workflow extensions.
+
+### 4. Running the Project
+
+```bash
+bash start_Version2.sh
+# Or run backend/frontend individually as needed
+```
+
+---
+
+## 🤖 KOSASIH Special Declarations
+
+- Place the following declaration at the top of any new shell or Python automation script to enable KOSASIH support:
+  ```bash
+  # KOSASIH-AUTOMATION-ENABLED
+  # This script is powered by KOSASIH automation suite
+  ```
+- Use `scripts/automation/` for:
+  - `deploy_kosasih.sh` – Deployment and maintenance
+  - `ai_moderation.py` – AI content moderation and analytics
+- Customize script parameters to fit your workflow and extend with new features as needed.
+
+---
+
+## 📁 Project Structure
+
+```
+PiMetaConnect/
+├── api/
+├── app/
+├── backend/
+├── frontend/
+├── public/
+├── scripts/
+│   └── automation/          # KOSASIH & AI scripts
+├── server/
+├── src/
+├── tests/
+├── .github/
+├── .env.example
+├── .gitignore
+├── CODE_OF_CONDUCT.md
+├── CONTRIBUTING.md
+├── LICENSE
+├── Project document
+├── README.md
+├── SECURITY.md
+├── setup_pimeta.sh
+├── setup_pimeta_termux.sh
+├── setup_replit_pimeta.sh
+├── start_Version2.sh
+└── ... (other files)
+```
+[View all files and folders in the repository.](https://github.com/Ze0ro99/PiMetaConnect/tree/main/)
+
+---
+
+## 🛡️ Best Practices
+
+- Never commit secrets or your actual `.env` file.
+- Update dependencies and scripts regularly.
+- Use GitHub Issues and Discussions for support and collaboration.
+
+---
+
+## 📣 Credits
+
+- **Pi Network Team** — for ecosystem and API innovation.
+- **KOSASIH** — for advanced automation and professional scripting.
+- **Contributors** — for ongoing improvements.
+
+---
+
+## 📬 Community & Support
+
+- [Discussions](https://github.com/Ze0ro99/PiMetaConnect/discussions)
+- [Pi Network Official](https://minepi.com/)
+- [Issues](https://github.com/Ze0ro99/PiMetaConnect/issues)
+
+---
+
+## 📜 License
+
+This project is licensed under the [MIT License](LICENSE).
+
+---
+
+> _Unleash the power of AI and automation in the Pi metaverse—powered by KOSASIH!_
