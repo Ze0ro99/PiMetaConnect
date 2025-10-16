@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="ar">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pi Testnet2 Activation Dashboard</title>
+  <style>
+    :root{
+      --bg:#071018;
+      --card:#0e1620;
+      --muted:#9fb0ba;
+      --accent1:#ff8a1f;
+      --accent2:#ff2d55;
+      --success:#00e6a8;
+      --glass: rgba(255,255,255,0.03);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter, "Segoe UI", Roboto, system-ui, -apple-system;}
+    body{
+      background:
+        radial-gradient(900px 400px at 10% 10%, rgba(255,45,85,0.05), transparent 6%),
+        radial-gradient(700px 300px at 90% 90%, rgba(255,122,24,0.03), transparent 8%),
+        var(--bg);
+      color:#e6eef3;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px;
+    }
+
+    .dashboard {
+      width: 980px;
+      max-width:calc(100% - 40px);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:14px;
+      padding:20px;
+      box-shadow: 0 10px 40px rgba(2,6,23,0.7);
+      overflow:hidden;
+      position:relative;
+    }
+
+    header { display:flex; gap:16px; align-items:center; margin-bottom:18px; }
+    .logo { width:68px;height:68px;border-radius:12px; background: linear-gradient(135deg,var(--accent1),var(--accent2)); display:flex;align-items:center;justify-content:center; font-weight:700;font-size:20px;color:#111; box-shadow:0 6px 22px rgba(255,45,85,0.12), inset 0 -6px 16px rgba(255,255,255,0.06); flex-shrink:0; }
+    h1{ margin:0; font-size:20px; letter-spacing:0.4px; }
+    p.lead{ margin:0; color:var(--muted); font-size:13px }
+
+    .grid { display:grid; grid-template-columns: 1fr 420px; gap:18px; align-items:start; }
+
+    .card { background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.0)); border-radius:12px; padding:18px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.02); position:relative; }
+
+    .countdown-wrap { display:flex; align-items:center; gap:18px; }
+    .countdown { flex:1; z-index:3; }
+    .countdown .big { font-family: "Orbitron", Inter, sans-serif; font-size:36px; letter-spacing:0.12em; background: linear-gradient(90deg, #ffd67a, #ff7a18, #ff2d55); -webkit-background-clip:text; -webkit-text-fill-color:transparent; text-shadow: 0 6px 28px rgba(255,45,85,0.08); }
+    .count-sub { color:var(--muted); font-size:13px; margin-top:6px; }
+
+    .flame-band { position:absolute; right:18px; top:28px; width:240px;height:140px; pointer-events:none; opacity:0.95; filter: blur(6px) saturate(1.08) contrast(1.05); z-index:0; }
+
+    .controls { display:flex; gap:10px; align-items:center; margin-top:16px; }
+    .btn { display:inline-flex; align-items:center; gap:10px; background:linear-gradient(180deg,#122027,#0d151b); border-radius:10px; padding:10px 14px; color:#dff7f0; border:0; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,0.6); font-weight:600; font-size:13px; }
+    .btn.ghost { background:transparent; border:1px solid rgba(255,255,255,0.04); color:var(--muted); }
+    .btn.danger { background:linear-gradient(180deg,var(--accent1),var(--accent2)); color:#111; }
+
+    .connection-timer { display:flex; gap:8px; align-items:center; margin-top:12px; }
+    .timer-pill { background:var(--glass); padding:10px 12px; border-radius:10px; font-weight:700; color:#fff; font-family: "Orbitron", Inter, sans-serif; box-shadow: inset 0 1px rgba(255,255,255,0.02); }
+
+    .steps { display:flex; flex-direction:column; gap:12px; }
+    .step { display:flex; justify-content:space-between; align-items:center; padding:12px; border-radius:10px; background:linear-gradient(180deg, rgba(255,255,255,0.007), rgba(255,255,255,0.004)); border:1px solid rgba(255,255,255,0.02); }
+    .step .left { display:flex; gap:12px; align-items:center; }
+    .badge { width:42px;height:42px;border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800; color:#05151a; background:linear-gradient(180deg,#fff1d6,#ffd67a); box-shadow:0 8px 24px rgba(255,122,24,0.07); }
+    .meta { color:var(--muted); font-size:13px; }
+    .status { text-align:right; min-width:170px; }
+    .status .state { font-weight:700; margin-bottom:6px; }
+    .state.pending { color:var(--muted); }
+    .state.running { color:#ffd67a; }
+    .state.done { color:var(--success); }
+
+    .elapsed { font-family: monospace; color:var(--muted); font-size:13px; }
+
+    .progress { height:8px; border-radius:8px; background:rgba(255,255,255,0.03); overflow:hidden; margin-top:8px; }
+    .progress > i { display:block; height:100%; background:linear-gradient(90deg,var(--accent1),var(--accent2)); width:0%; transition:width 0.6s linear; }
+
+    .notes { margin-top:14px; color:var(--muted); font-size:13px }
+
+    @media (max-width:980px){ .grid{grid-template-columns:1fr} }
+  </style>
+</head>
+<body>
+  <div class="dashboard" role="application" aria-label="Pi Testnet2 Activation Dashboard">
+    <header>
+      <div class="logo">Pi</div>
+      <div>
+        <h1>Pi Network — Testnet 2 Activation Dashboard</h1>
+        <p class="lead">مراقبة التفعيل، بدء الاتصال، وعدادات زمنية لكل خطوة. يتم تحديث الحالة مباشرةً من الخادم (SSE/WebSocket).</p>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card" style="min-height:260px;position:relative;z-index:2;">
+        <div class="countdown-wrap">
+          <div class="countdown" style="z-index:3">
+            <div class="big" id="launchCountdown">-- : -- : -- : --</div>
+            <div class="count-sub" id="countSub">Countdown to Testnet2 activation (UTC)</div>
+
+            <div class="controls" style="margin-top:10px;">
+              <button class="btn danger" id="btnStart">ابدأ الاتصال (S)</button>
+              <button class="btn ghost" id="btnAbort">إلغاء (A)</button>
+              <button class="btn ghost" id="btnReset">إعادة ضبط (R)</button>
+            </div>
+
+            <div class="connection-timer" style="margin-top:14px;">
+              <div style="flex:1">
+                <div style="color:var(--muted);font-size:13px">وقت منذ بدء الاتصال</div>
+                <div class="timer-pill" id="connTimer">--:--:--</div>
+              </div>
+              <div>
+                <div style="color:var(--muted);font-size:13px">التقدم العام</div>
+                <div class="timer-pill" id="overallProgress">0%</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flame-band" aria-hidden="true">
+            <svg class="flame-svg" viewBox="0 0 600 300" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="g1" x1="0" x2="1">
+                  <stop offset="0%" stop-color="#ff9f4d" stop-opacity="0.95"/>
+                  <stop offset="55%" stop-color="#ff3b6b" stop-opacity="0.85"/>
+                  <stop offset="100%" stop-color="#ffd67a" stop-opacity="0.6"/>
+                </linearGradient>
+                <filter id="f1" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="8" result="b"/>
+                  <feColorMatrix type="matrix" values="1 0 0 0 0  0 0.2 0 0 0  0 0 0.1 0 0  0 0 0 0.6 0" in="b"/>
+                </filter>
+              </defs>
+
+              <path fill="url(#g1)" filter="url(#f1)">
+                <animate attributeName="d" dur="6s" repeatCount="indefinite" values="
+                  M0,250 C120,110 240,140 360,110 C420,95 480,120 600,70 L600,300 L0,300 Z;
+                  M0,250 C100,90 220,180 360,100 C420,40 480,160 600,120 L600,300 L0,300 Z;
+                  M0,250 C140,130 260,120 380,140 C460,160 520,110 600,80 L600,300 L0,300 Z;
+                  M0,250 C120,110 240,140 360,110 C420,95 480,120 600,70 L600,300 L0,300 Z
+                "/>
+              </path>
+            </svg>
+          </div>
+
+        </div>
+
+        <div class="notes">
+          ملاحظة: الواجهة جاهزة للعمل محليًا أو يمكن ربطها بخادم Node.js (الملف server.js مرفق). لتشغيل الحزمة: قم بتعيين المتغيرات البيئية ثم <code>npm install</code> و <code>npm start</code>.
+        </div>
+      </div>
+
+      <div class="steps">
+        <!-- steps يُملأون بواسطة السكربت -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // CONFIG: ضبط التاريخ الفعلي هنا (UTC)
+    const launchDate = new Date("2025-09-27T18:00:00Z");
+
+    const stepsConfig = [
+      { id: 'init', title: 'Initialize Connection', detail: 'Open sockets and allocate resources', expectedSec: 20 },
+      { id: 'handshake', title: 'Handshake & Authorization', detail: 'Protocol negotiation and key exchange', expectedSec: 30 },
+      { id: 'sync', title: 'Sync Nodes', detail: 'Fetch chain state and latest blocks', expectedSec: 60 },
+      { id: 'apply', title: 'Apply Protocol v23', detail: 'Enable protocol features and migrations', expectedSec: 45 },
+      { id: 'validate', title: 'Validation & Finalization', detail: 'Final checks, validators confirm readiness', expectedSec: 25 }
+    ];
+
+    let connStartedAt = null;
+    let connTimerInterval = null;
+    let countdownInterval = null;
+    let stepIntervals = {};
+    let stepState = {};
+    let overallProgress = 0;
+    let currentStepIndex = -1;
+    let aborted = false;
+
+    function formatHMS(totalSec){
+      if(totalSec < 0) totalSec = 0;
+      const h = Math.floor(totalSec/3600);
+      const m = Math.floor((totalSec%3600)/60);
+      const s = Math.floor(totalSec%60);
+      if(h>0) return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+    function percent(n){ return Math.min(100, Math.max(0, Math.round(n))); }
+
+    const stepsContainer = document.querySelector('.steps');
+    function buildStepsUI(){
+      stepsContainer.innerHTML = '';
+      stepsConfig.forEach((s, idx) => {
+        const el = document.createElement('div');
+        el.className = 'step';
+        el.id = `step-${s.id}`;
+        el.innerHTML = `
+          <div class="left">
+            <div class="badge">${idx+1}</div>
+            <div>
+              <div style="font-weight:700">${s.title}</div>
+              <div class="meta">${s.detail}</div>
+              <div class="progress" aria-hidden="true"><i id="prog-${s.id}" style="width:0%"></i></div>
+            </div>
+          </div>
+          <div class="status">
+            <div class="state pending" id="state-${s.id}">PENDING</div>
+            <div class="elapsed" id="time-${s.id}">--:--</div>
+          </div>
+        `;
+        stepsContainer.appendChild(el);
+
+        stepState[s.id] = { status: 'pending', startedAt: null, elapsedSec: 0 };
+      });
+    }
+    buildStepsUI();
+
+    function updateCountdown(){
+      const now = new Date();
+      const diff = Math.floor((launchDate - now) / 1000);
+      const cd = document.getElementById('launchCountdown');
+      const sub = document.getElementById('countSub');
+
+      if(diff > 0){
+        const days = Math.floor(diff / (24*3600));
+        let rem = diff - days * 24*3600;
+        const hours = Math.floor(rem / 3600); rem -= hours * 3600;
+        const mins = Math.floor(rem / 60); const secs = rem % 60;
+        cd.textContent = `${String(days).padStart(2,'0')} : ${String(hours).padStart(2,'0')} : ${String(mins).padStart(2,'0')} : ${String(secs).padStart(2,'0')}`;
+        sub.textContent = 'Countdown to Testnet2 activation (UTC)';
+      } else {
+        cd.textContent = '00 : 00 : 00 : 00';
+        sub.textContent = 'Activation time reached — ready to start connection';
+        if(!connStartedAt && !aborted){
+          startConnection();
+        }
+      }
+    }
+    updateCountdown();
+    countdownInterval = setInterval(updateCountdown, 1000);
+
+    const btnStart = document.getElementById('btnStart');
+    const btnAbort = document.getElementById('btnAbort');
+    const btnReset = document.getElementById('btnReset');
+    btnStart.addEventListener('click', () => { aborted=false; startConnection(true); });
+    btnAbort.addEventListener('click', () => abortConnection());
+    btnReset.addEventListener('click', () => resetAll());
+
+    function startConnection(triggeredByUser=false){
+      if(connStartedAt) return;
+      connStartedAt = new Date();
+      currentStepIndex = -1;
+      document.getElementById('connTimer').textContent = '00:00:00';
+      document.getElementById('overallProgress').textContent = '0%';
+      stepsConfig.forEach(s => {
+        const st = stepState[s.id];
+        st.status = 'pending'; st.startedAt = null; st.elapsedSec = 0;
+        document.getElementById(`state-${s.id}`).textContent = 'PENDING';
+        document.getElementById(`state-${s.id}`).className = 'state pending';
+        document.getElementById(`time-${s.id}`).textContent = '--:--';
+        document.getElementById(`prog-${s.id}`).style.width = '0%';
+      });
+
+      if(connTimerInterval) clearInterval(connTimerInterval);
+      connTimerInterval = setInterval(()=> {
+        const elapsed = Math.floor((Date.now() - connStartedAt.getTime())/1000);
+        document.getElementById('connTimer').textContent = formatHMS(elapsed);
+      }, 250);
+
+      nextStep();
+      // Also connect to server SSE for real events if available
+      connectSSE();
+    }
+
+    function abortConnection(){
+      if(!connStartedAt) return;
+      aborted = true;
+      Object.values(stepIntervals).forEach(iv => clearInterval(iv));
+      clearInterval(connTimerInterval);
+      connStartedAt = null;
+      currentStepIndex = -1;
+      stepsConfig.forEach(s => {
+        if(stepState[s.id].status === 'running') {
+          stepState[s.id].status = 'pending';
+          document.getElementById(`state-${s.id}`).textContent = 'ABORTED';
+          document.getElementById(`state-${s.id}`).className = 'state pending';
+        }
+      });
+      document.getElementById('overallProgress').textContent = 'ABORTED';
+      if(window.sse) { try { window.sse.close(); } catch(e){} }
+    }
+
+    function resetAll(){
+      aborted = false;
+      if(connTimerInterval) clearInterval(connTimerInterval);
+      connStartedAt = null;
+      currentStepIndex = -1;
+      document.getElementById('connTimer').textContent = '--:--:--';
+      document.getElementById('overallProgress').textContent = '0%';
+      stepsConfig.forEach(s => {
+        stepState[s.id] = { status:'pending', startedAt:null, elapsedSec:0 };
+        document.getElementById(`state-${s.id}`).textContent = 'PENDING';
+        document.getElementById(`state-${s.id}`).className = 'state pending';
+        document.getElementById(`time-${s.id}`).textContent = '--:--';
+        document.getElementById(`prog-${s.id}`).style.width = '0%';
+      });
+      if(window.sse) { try { window.sse.close(); } catch(e){} }
+    }
+
+    function nextStep(){
+      if(aborted) return;
+      currentStepIndex++;
+      if(currentStepIndex >= stepsConfig.length){
+        finalizeConnection();
+        return;
+      }
+      const step = stepsConfig[currentStepIndex];
+      startStep(step);
+    }
+
+    function startStep(step){
+      const sid = step.id;
+      const uiState = document.getElementById(`state-${sid}`);
+      uiState.textContent = 'RUNNING';
+      uiState.className = 'state running';
+      stepState[sid].status = 'running';
+      stepState[sid].startedAt = Date.now();
+      stepState[sid].elapsedSec = 0;
+
+      if(stepIntervals[sid]) clearInterval(stepIntervals[sid]);
+      stepIntervals[sid] = setInterval(()=> {
+        const elapsed = Math.floor((Date.now() - stepState[sid].startedAt)/1000);
+        stepState[sid].elapsedSec = elapsed;
+        document.getElementById(`time-${sid}`).textContent = formatHMS(elapsed);
+        const prog = percent((elapsed / Math.max(1, step.expectedSec)) * 100);
+        document.getElementById(`prog-${sid}`).style.width = prog + '%';
+        updateOverallProgress();
+        if(elapsed >= step.expectedSec){
+          completeStep(step);
+        }
+      }, 500);
+    }
+
+    function completeStep(step){
+      const sid = step.id;
+      clearInterval(stepIntervals[sid]);
+      stepState[sid].status = 'done';
+      document.getElementById(`state-${sid}`).textContent = 'DONE';
+      document.getElementById(`state-${sid}`).className = 'state done';
+      document.getElementById(`prog-${sid}`).style.width = '100%';
+      updateOverallProgress();
+      setTimeout(()=> nextStep(), 800);
+    }
+
+    function updateOverallProgress(){
+      const doneCount = stepsConfig.filter(s => stepState[s.id].status === 'done').length;
+      const weightPerStep = 100 / stepsConfig.length;
+      let base = doneCount * weightPerStep;
+      let fractional = 0;
+      stepsConfig.forEach(s => {
+        if(stepState[s.id].status === 'running'){
+          const el = document.getElementById(`prog-${s.id}`);
+          const w = parseFloat(el.style.width) || 0;
+          fractional += (w/100) * weightPerStep;
+        }
+      });
+      overallProgress = Math.round(base + fractional);
+      document.getElementById('overallProgress').textContent = `${Math.min(100,overallProgress)}%`;
+    }
+
+    function finalizeConnection(){
+      clearInterval(connTimerInterval);
+      const elapsed = Math.floor((Date.now() - connStartedAt.getTime())/1000);
+      document.getElementById('connTimer').textContent = formatHMS(elapsed);
+      document.getElementById('overallProgress').textContent = '100%';
+      document.getElementById('countSub').textContent = 'Testnet2 activated — connection finished';
+    }
+
+    // SSE: اتصال بخادم الأحداث لقراءة أحداث واقعية (يتوقع endpoint /events)
+    function connectSSE(){
+      try{
+        if(window.sse) window.sse.close();
+        window.sse = new EventSource('/events');
+        window.sse.onmessage = function(e){
+          try{
+            const m = JSON.parse(e.data);
+            if(m.type === 'step'){
+              if(m.event === 'started') {
+                const idx = stepsConfig.findIndex(s=>s.id===m.stepId);
+                if(idx >= 0 && stepState[m.stepId].status !== 'running' && stepState[m.stepId].status !== 'done') {
+                  currentStepIndex = Math.min(idx, currentStepIndex+1);
+                  startStep(stepsConfig[idx]);
+                }
+              } else if(m.event === 'done') {
+                const idx = stepsConfig.findIndex(s=>s.id===m.stepId);
+                if(idx >= 0) completeStep(stepsConfig[idx]);
+              }
+            } else if(m.type === 'info'){
+              console.info('Server info:', m.msg);
+            }
+          }catch(err){
+            console.error('SSE parse error', err, e.data);
+          }
+        };
+        window.sse.onerror = function(err){ console.warn('SSE error',err); window.sse.close();};
+      }catch(ex){
+        console.warn('SSE not available', ex);
+      }
+    }
+
+    window.addEventListener('load', () => {
+      if(Date.now() >= launchDate.getTime()){
+        setTimeout(()=> { if(!connStartedAt && !aborted) startConnection(false); }, 600);
+      }
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if(e.key === 'S' || e.key === 's') btnStart.click();
+      if(e.key === 'A' || e.key === 'a') btnAbort.click();
+      if(e.key === 'R' || e.key === 'r') btnReset.click();
+    });
+  </script>
+</body>
+</html>
