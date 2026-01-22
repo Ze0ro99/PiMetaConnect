@@ -1,0 +1,22 @@
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<script>
+Pi.init({ version: "2.0", sandbox: false });
+
+async function loginWithPi() {
+  const auth = await Pi.authenticate(["username", "payments"]);
+  console.log("Pi User:", auth.user);
+}
+
+async function pay() {
+  const payment = await Pi.createPayment({
+    amount: 1,
+    memo: "Buy NFT",
+    metadata: { itemId: "nft_001" },
+  });
+
+  await fetch("/api/pi/payment", {
+    method: "POST",
+    body: JSON.stringify({ paymentId: payment.identifier }),
+  });
+}
+</script>
