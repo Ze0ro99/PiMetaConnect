@@ -1,0 +1,12 @@
+import math
+
+reputations = {}
+
+def update_reputation(user, action_score):
+    old = reputations.get(user, 0)
+    new = old + math.tanh(action_score)
+    reputations[user] = round(new, 3)
+    return reputations[user]
+
+def get_reputation(user):
+    return reputations.get(user, 0)
