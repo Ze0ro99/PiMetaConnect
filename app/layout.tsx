@@ -15,4 +15,3 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
-npm install @vercel/speed-insights
