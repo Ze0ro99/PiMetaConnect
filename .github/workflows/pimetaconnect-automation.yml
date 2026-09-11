@@ -22,13 +22,13 @@ jobs:
     steps:
       # Step 1: Checkout the repository
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
 
       # Step 2: Set up Node.js for client and server dependencies
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v7
         with:
-          node-version: '16'
+          node-version: '20'
 
       # Step 3: Install client dependencies
       - name: Install client dependencies
